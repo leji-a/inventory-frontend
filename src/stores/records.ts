@@ -17,7 +17,6 @@ export const useRecordsStore = defineStore('records', {
     error: null,
   }),
 
-  // persist last known records (optional)
   persist: true,
 
   actions: {
@@ -32,10 +31,10 @@ export const useRecordsStore = defineStore('records', {
       this.error = null
       try {
         const res = await RecordAPI.listByPeriod(auth.token, periodId)
-        // res: { data: InventoryRecord[] }
-        this.byPeriod[periodId] = res.data ?? []
+        this.byPeriod[periodId] = res ?? []
       } catch (err: any) {
-        this.error = err.message ?? String(err)
+        this.error = err?.message ?? String(err)
+        this.byPeriod[periodId] = this.byPeriod[periodId] ?? []
       } finally {
         this.loading = false
       }

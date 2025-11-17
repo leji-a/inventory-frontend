@@ -19,7 +19,6 @@ export const usePeriodsStore = defineStore('periods', {
     error: null,
   }),
 
-  // persist active period (and all periods if you want)
   persist: true,
 
   actions: {

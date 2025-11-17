@@ -1,10 +1,10 @@
-// src/api/records.ts
+// src/api/endpoints/records.ts
 import { apiFetch } from '../index'
 import type { InventoryRecord } from '../types'
 
 export const RecordAPI = {
   listByPeriod: (token: string, periodId: number) =>
-    apiFetch<{ data: InventoryRecord[] }>(
+    apiFetch<InventoryRecord[]>(
       `/inventory/periods/${periodId}/records`,
       token
     ),
@@ -20,5 +20,8 @@ export const RecordAPI = {
     }),
 
   current: (token: string) =>
-    apiFetch<{ data: InventoryRecord[] }>('/inventory/current', token),
+    apiFetch<{ period: any | null; records: InventoryRecord[] }>(
+      '/inventory/current',
+      token
+    ),
 }

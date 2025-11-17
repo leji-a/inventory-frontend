@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
+
 import { useAuthStore } from '../stores/auth'
 import { useProductsStore } from '../stores/products'
 import { usePeriodsStore } from '../stores/periods'
+import { useRecordsStore } from '../stores/records'
 
 import DashboardProducts from '../components/DashboardProducts.vue'
 
@@ -11,6 +13,9 @@ const router = useRouter()
 const auth = useAuthStore()
 const productStore = useProductsStore()
 const periodStore = usePeriodsStore()
+const recordsStore = useRecordsStore()
+
+const filterMode = ref<'all' | 'included' | 'excluded'>('all')
 
 onMounted(async () => {
   if (!auth.token) {
@@ -18,13 +23,23 @@ onMounted(async () => {
     return
   }
 
-  // Load data only if not already loaded
   if (!productStore.items.length) await productStore.fetchAll()
   if (!periodStore.activePeriod) await periodStore.fetchActive()
+
+  if (periodStore.activePeriod) {
+    await recordsStore.fetchByPeriod(periodStore.activePeriod.id)
+  }
 })
 
-async function logout() {
-  await auth.signOut()
+const products = computed(() => productStore.items ?? [])
+const activeRecords = computed(() => {
+  const p = periodStore.activePeriod
+  if (!p) return []
+  return recordsStore.byPeriod[p.id] ?? []
+})
+
+function logout() {
+  auth.signOut()
   router.push('/login')
 }
 </script>
@@ -42,7 +57,21 @@ async function logout() {
       <p><strong>Fecha inicio:</strong> {{ periodStore.activePeriod.start_date }}</p>
     </div>
 
-    <DashboardProducts />
+    <div class="filter-box">
+      <label>Filtrar:</label>
+      <select v-model="filterMode">
+        <option value="all">Todos</option>
+        <option value="included">Incluidos en el período</option>
+        <option value="excluded">No incluidos</option>
+      </select>
+    </div>
+
+    <DashboardProducts
+      :products="products"
+      :records="activeRecords"
+      :period="periodStore.activePeriod"
+      :filterMode="filterMode"
+    />
   </div>
 </template>
 
@@ -91,8 +120,15 @@ async function logout() {
   color: #646cff;
 }
 
-.active-period-card p {
-  margin: 0.25rem 0;
-  font-size: 1rem;
+.filter-box {
+  margin-bottom: 1.5rem;
+}
+
+select {
+  background: #1b1b1b;
+  color: #eee;
+  border: 1px solid #333;
+  padding: 0.5rem;
+  border-radius: 6px;
 }
 </style>

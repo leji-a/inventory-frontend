@@ -1,8 +1,14 @@
+// ========================
+// AUTH
+// ========================
 export interface AuthResponse {
   token: string
   user: { id: number; email: string }
 }
 
+// ========================
+// PRODUCTS
+// ========================
 export interface Product {
   id: number
   name: string
@@ -12,6 +18,9 @@ export interface Product {
   images?: string[]
 }
 
+// ========================
+// PAGINATED PRODUCTS
+// ========================
 export interface PaginatedProducts {
   data: Product[]
   pagination: {
@@ -24,20 +33,28 @@ export interface PaginatedProducts {
   }
 }
 
+// ========================
+// INVENTORY PERIODS
+// ========================
 export interface InventoryPeriod {
   id: number
   name: string
   start_date: string
   end_date?: string
-  is_active: boolean
-  notes: string
+  is_active?: boolean 
+  notes?: string
+  status?: 'active' | 'closed'
 }
 
 export interface CreatePeriodInput {
   name: string
   start_date: string
+  notes?: string
 }
 
+// ========================
+// INVENTORY RECORDS
+// ========================
 export interface InventoryRecord {
   id: number
   product_id: number
@@ -47,7 +64,12 @@ export interface InventoryRecord {
   counted_at?: string
   created_at?: string
   updated_at?: string
-  product?: Product
+
+  product?: {
+    id: number
+    name: string
+    price: number
+  }
 }
 
 export interface ProductHistory {
