@@ -2,16 +2,25 @@
 import { ref } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { useRouter } from 'vue-router'
+import ErrorMessage from '../components/ErrorMessage.vue'
 
 const email = ref('')
 const password = ref('')
 const auth = useAuthStore()
 const router = useRouter()
+
 const error = ref('')
 const loading = ref(false)
+const errors = ref({ email: "", password: "" })
 
 async function handleSignup() {
-  error.value = ''
+  error.value = ""
+  errors.value = { email: "", password: "" }
+
+  if (!email.value) errors.value.email = "Email is required."
+  if (!password.value) errors.value.password = "Password is required."
+  if (errors.value.email || errors.value.password) return
+
   loading.value = true
   try {
     await auth.signup(email.value, password.value)
@@ -30,24 +39,18 @@ async function handleSignup() {
       <h1 class="auth-title">Crear cuenta</h1>
 
       <form @submit.prevent="handleSignup" class="auth-form">
-        <input
-          v-model="email"
-          type="email"
-          placeholder="Email"
-          class="auth-input"
-        />
 
-        <input
-          v-model="password"
-          type="password"
-          placeholder="Contraseña"
-          class="auth-input"
-        />
+        <div class="field">
+          <input v-model="email" type="email" placeholder="Email" class="auth-input" />
+          <ErrorMessage :message="errors.email" />
+        </div>
 
-        <button
-          class="auth-button"
-          :disabled="loading"
-        >
+        <div class="field">
+          <input v-model="password" type="password" placeholder="Contraseña" class="auth-input" />
+          <ErrorMessage :message="errors.password" />
+        </div>
+
+        <button class="auth-button" :disabled="loading">
           {{ loading ? "..." : "Registrarse" }}
         </button>
       </form>
@@ -62,9 +65,8 @@ async function handleSignup() {
 </template>
 
 <style scoped>
-/* Matches Login View EXACTLY */
+/* EXACT same styles as login */
 
-/* Outer layout */
 .auth-wrapper {
   display: flex;
   justify-content: center;
@@ -72,7 +74,6 @@ async function handleSignup() {
   min-height: 100vh;
 }
 
-/* Card */
 .auth-card {
   width: 100%;
   max-width: 360px;
@@ -82,7 +83,6 @@ async function handleSignup() {
   border: 1px solid #2a2a2a;
 }
 
-/* Title */
 .auth-title {
   margin-bottom: 2rem;
   font-size: 1.8rem;
@@ -90,14 +90,18 @@ async function handleSignup() {
   text-align: center;
 }
 
-/* Form */
 .auth-form {
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 
-/* Inputs */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
 .auth-input {
   padding: 0.75rem 1rem;
   background: #111;
@@ -113,7 +117,6 @@ async function handleSignup() {
   border-color: #646cff;
 }
 
-/* Button */
 .auth-button {
   padding: 0.75rem;
   background: #646cff;
@@ -131,7 +134,6 @@ async function handleSignup() {
   cursor: default;
 }
 
-/* Error */
 .auth-error {
   color: #ff6b6b;
   margin-top: 1rem;
@@ -139,7 +141,6 @@ async function handleSignup() {
   font-size: 0.9rem;
 }
 
-/* Link */
 .auth-link {
   margin-top: 1.2rem;
   color: #8aa0ff;
