@@ -22,7 +22,6 @@ export async function apiFetch<T>(
   return res.json()
 }
 
-// Re-export all endpoint groups
 export * from './endpoints/auth'
 export * from './endpoints/products'
 export * from './endpoints/periods'
