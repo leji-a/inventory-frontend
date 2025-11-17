@@ -11,6 +11,11 @@ export const AuthAPI = {
   async signup(email: string, password: string) {
     const { data, error } = await supabase.auth.signUp({ email, password })
     if (error) throw error
+
+    if (!data.user) {
+    throw { code: "user_already_exists", message: "User already exists" }
+    }
+
     return data
   },
 
