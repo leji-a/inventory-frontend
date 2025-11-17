@@ -17,8 +17,10 @@ async function handleSignup() {
   error.value = ""
   errors.value = { email: "", password: "" }
 
-  if (!email.value) errors.value.email = "Email is required."
-  if (!password.value) errors.value.password = "Password is required."
+  
+  if (!email.value) errors.value.email = "El email es requerido."
+  if (!password.value) errors.value.password = "La contraseña es requerida."
+  if (password.value && password.value.length < 6) errors.value.password = "La contraseña debe tener al menos 6 caracteres."
   if (errors.value.email || errors.value.password) return
 
   loading.value = true
@@ -26,7 +28,7 @@ async function handleSignup() {
     await auth.signup(email.value, password.value)
     router.push('/')
   } catch (err: any) {
-    error.value = err.message
+    error.value = err.message || "Error al crear cuenta"
   } finally {
     loading.value = false
   }
@@ -50,12 +52,12 @@ async function handleSignup() {
           <ErrorMessage :message="errors.password" />
         </div>
 
+        <ErrorMessage :message="error" />
+
         <button class="auth-button" :disabled="loading">
           {{ loading ? "..." : "Registrarse" }}
         </button>
       </form>
-
-      <p v-if="error" class="auth-error">{{ error }}</p>
 
       <router-link to="/login" class="auth-link">
         ¿Ya tiene una cuenta? Ingresar
@@ -65,8 +67,6 @@ async function handleSignup() {
 </template>
 
 <style scoped>
-/* EXACT same styles as login */
-
 .auth-wrapper {
   display: flex;
   justify-content: center;
@@ -132,13 +132,6 @@ async function handleSignup() {
 .auth-button:disabled {
   opacity: 0.6;
   cursor: default;
-}
-
-.auth-error {
-  color: #ff6b6b;
-  margin-top: 1rem;
-  text-align: center;
-  font-size: 0.9rem;
 }
 
 .auth-link {

@@ -26,7 +26,7 @@ async function handleLogin() {
     await auth.login(email.value, password.value)
     router.push('/')
   } catch (err: any) {
-    error.value = err.message
+    error.value = err.message || "Error al iniciar sesión"
   } finally {
     loading.value = false
   }
@@ -50,12 +50,12 @@ async function handleLogin() {
           <ErrorMessage :message="errors.password" />
         </div>
 
+        <ErrorMessage :message="error" />
+
         <button class="auth-button" :disabled="loading">
           {{ loading ? "..." : "Ingresar" }}
         </button>
       </form>
-
-      <p v-if="error" class="auth-error">{{ error }}</p>
 
       <router-link to="/signup" class="auth-link">
         Crear cuenta
@@ -65,8 +65,6 @@ async function handleLogin() {
 </template>
 
 <style scoped>
-/* EXACT same style you had before */
-
 .auth-wrapper {
   display: flex;
   justify-content: center;
@@ -132,13 +130,6 @@ async function handleLogin() {
 .auth-button:disabled {
   opacity: 0.6;
   cursor: default;
-}
-
-.auth-error {
-  color: #ff6b6b;
-  margin-top: 1rem;
-  text-align: center;
-  font-size: 0.9rem;
 }
 
 .auth-link {
