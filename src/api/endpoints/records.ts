@@ -1,3 +1,4 @@
+// src/api/records.ts
 import { apiFetch } from '../index'
 import type { InventoryRecord } from '../types'
 

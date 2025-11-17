@@ -1,3 +1,4 @@
+// src/api/periods.ts
 import { apiFetch } from '../index'
 import type { InventoryPeriod, CreatePeriodInput } from '../types'
 

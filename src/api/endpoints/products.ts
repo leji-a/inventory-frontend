@@ -1,3 +1,4 @@
+// src/api/products.ts
 import { apiFetch } from '../index'
 import type { Product, PaginatedProducts, ProductHistory } from '../types'
 
