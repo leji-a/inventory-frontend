@@ -30,6 +30,7 @@ export interface InventoryPeriod {
   start_date: string
   end_date?: string
   is_active: boolean
+  notes: string
 }
 
 export interface CreatePeriodInput {
