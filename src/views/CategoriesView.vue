@@ -61,6 +61,10 @@ const isSubmitDisabled = computed(() =>
   formLoading.value || !categoryName.value.trim()
 )
 
+const isEditDisabled = computed(() =>
+  !editName.value.trim()
+)
+
 const handleCreateCategory = async () => {
   if (!categoryName.value.trim()) {
     formError.value = 'El nombre es obligatorio'
@@ -113,7 +117,7 @@ const saveEdit = async () => {
   try {
     await categoriesStore.updateCategory(editingCategory.value.id, {
       name: editName.value.trim(),
-      description: editDescription.value.trim() || undefined
+      description: editDescription.value.trim()
     })
     cancelEditing()
   } catch (err: any) {
@@ -130,7 +134,7 @@ const saveEdit = async () => {
   ⬅ Volver al Dashboard
 </button>
       <h1>Gestión de Categorías</h1>
-      <!-- 🔍 NUEVO BUSCADOR -->
+
       <SearchBar
         v-model="searchQuery"
         placeholder="Buscar categorías..."
@@ -199,8 +203,14 @@ const saveEdit = async () => {
           <div v-if="editingCategory?.id === category.id" class="edit-form">
             <input v-model="editName" type="text" class="input" placeholder="Nombre" />
             <input v-model="editDescription" type="text" class="input" placeholder="Descripción" />
-            <button class="btn-primary" @click="saveEdit">Guardar</button>
-            <button class="btn-secondary" @click="cancelEditing">Cancelar</button>
+            <div class="edit-form-buttons">
+              <button class="btn-primary" @click="saveEdit" :disabled="isEditDisabled">
+                Guardar
+              </button>
+              <button class="btn-secondary" @click="cancelEditing">
+                Cancelar
+              </button>
+            </div>
           </div>
 
           <div v-else class="category-info">
@@ -480,5 +490,17 @@ const saveEdit = async () => {
     flex-direction: column;
     gap: 0.5rem;
   }
+}
+
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.edit-form-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
 }
 </style>
