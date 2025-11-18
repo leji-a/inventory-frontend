@@ -3,6 +3,8 @@ import { onMounted, ref, computed } from 'vue'
 import { useCategoriesStore } from '../stores/categories'
 import type { Category } from '../api/types'
 import ErrorMessage from '../components/ErrorMessage.vue'
+import SearchBar from '../components/SearchBar.vue'
+import Pagination from '../components/Pagination.vue'
 
 const categoriesStore = useCategoriesStore()
 
@@ -17,6 +19,26 @@ const formError = ref('')
 const editingCategory = ref<Category | null>(null)
 const editName = ref('')
 const editDescription = ref('')
+
+// Búsqueda
+const searchQuery = ref('')
+
+const filteredCategories = computed(() => {
+  const q = searchQuery.value.toLowerCase().trim()
+  if (!q) return categoriesStore.items
+  return categoriesStore.items.filter(c =>
+    c.name.toLowerCase().includes(q)
+  )
+})
+
+// Paginación
+const currentPage = computed(() => categoriesStore.currentPage)
+const totalPages = computed(() => categoriesStore.totalPages)
+
+const goToPage = async (page: number) => {
+  if (page < 1 || page > totalPages.value) return
+  await categoriesStore.fetchAll(page, categoriesStore.limit)
+}
 
 // Cargar categorías al montar
 onMounted(async () => {
@@ -103,9 +125,15 @@ const saveEdit = async () => {
 <template>
   <div class="categories-view">
 
-    <!-- Header -->
     <div class="header">
       <h1>Gestión de Categorías</h1>
+
+      <!-- 🔍 NUEVO BUSCADOR -->
+      <SearchBar
+        v-model="searchQuery"
+        placeholder="Buscar categorías..."
+      />
+
       <button
         class="btn-primary"
         @click="showCreateForm = !showCreateForm"
@@ -115,7 +143,6 @@ const saveEdit = async () => {
       </button>
     </div>
 
-    <!-- Crear categoría -->
     <div v-if="showCreateForm" class="create-form">
       <h2>Nueva Categoría</h2>
       <form @submit.prevent="handleCreateCategory" class="form">
@@ -153,7 +180,6 @@ const saveEdit = async () => {
       </form>
     </div>
 
-    <!-- Lista de categorías -->
     <div class="categories-list">
       <ErrorMessage :message="categoriesStore.error" />
 
@@ -161,17 +187,13 @@ const saveEdit = async () => {
         Cargando categorías...
       </div>
 
-      <div v-else-if="categoriesStore.items.length === 0" class="empty-state">
-        <p>No hay categorías creadas</p>
-        <button class="btn-primary" @click="showCreateForm = true">
-          Crear primera categoría
-        </button>
+      <div v-else-if="filteredCategories.length === 0" class="empty-state">
+        <p>No hay categorías que coincidan</p>
       </div>
 
       <div v-else class="categories-grid">
-        <div v-for="category in categoriesStore.items" :key="category.id" class="category-card">
+        <div v-for="category in filteredCategories" :key="category.id" class="category-card">
 
-          <!-- Editar inline -->
           <div v-if="editingCategory?.id === category.id" class="edit-form">
             <input v-model="editName" type="text" class="input" placeholder="Nombre" />
             <input v-model="editDescription" type="text" class="input" placeholder="Descripción" />
@@ -179,7 +201,6 @@ const saveEdit = async () => {
             <button class="btn-secondary" @click="cancelEditing">Cancelar</button>
           </div>
 
-          <!-- Vista normal -->
           <div v-else class="category-info">
             <h3>{{ category.name }}</h3>
             <p v-if="category.description" class="category-description">{{ category.description }}</p>
@@ -189,7 +210,6 @@ const saveEdit = async () => {
             </div>
           </div>
 
-          <!-- Acciones -->
           <div class="category-actions" v-if="editingCategory?.id !== category.id">
             <button class="btn-secondary" @click="startEditing(category)" :disabled="categoriesStore.loading">
               Editar
@@ -203,6 +223,12 @@ const saveEdit = async () => {
       </div>
     </div>
 
+<Pagination
+  :currentPage="currentPage"
+  :totalPages="totalPages"
+  :loading="categoriesStore.loading"
+  @change="goToPage"
+/>
   </div>
 </template>
 
