@@ -64,24 +64,24 @@ export const useCategoriesStore = defineStore('categories', {
     },
 
     async deleteCategory(id: number) {
-      const auth = useAuthStore()
-      if (!auth.token) throw new Error('Not authenticated')
+     const auth = useAuthStore()
+     if (!auth.token) throw new Error('Not authenticated')
 
-      this.loading = true
-      this.error = null
+     this.loading = true
+     this.error = null
 
-      try {
-        await categoriesApi.deleteCategory(id, auth.token)
-        this.items = this.items.filter(c => c.id !== id)
-        if (this.pagination) this.pagination.total -= 1
-      } catch (err: any) {
-        this.error = err.message ?? String(err)
-        throw err
-      } finally {
-        this.loading = false
-      }
+     try {
+        await categoriesApi.deleteCategory(id, auth.token) // puede retornar null
+       this.items = this.items.filter(c => c.id !== id)
+       if (this.pagination) this.pagination.total -= 1
+     } catch (err: any) {
+       this.error = err.message ?? String(err)
+       throw err
+     } finally {
+       this.loading = false
+     }
     }
-  },
+},
 
   getters: {
     getCategoryById: (state) => (id: number) => state.items.find(c => c.id === id),

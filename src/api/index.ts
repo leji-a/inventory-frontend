@@ -15,21 +15,22 @@ export async function apiFetch<T>(
     },
   })
 
+  if (res.status === 204) {
+    return null as unknown as T
+  }
+
   const responseText = await res.text()
+  if (!responseText) return null as unknown as T
 
   if (res.status === 422) {
     try {
       const errorData = JSON.parse(responseText)
-      if (errorData.found?.data !== undefined) {
+      if (errorData.found && errorData.found.data !== undefined) {
         return errorData.found as T
       }
     } catch {
-      // ignore
+      // ignorar
     }
-  }
-
-  if (res.status === 204) {
-    return {} as T
   }
 
   if (!res.ok) {
@@ -38,10 +39,11 @@ export async function apiFetch<T>(
 
   try {
     return JSON.parse(responseText) as T
-  } catch (err) {
+  } catch (parseError) {
     throw new Error(`Failed to parse API response: ${responseText}`)
   }
 }
+
 
 
 export * from './endpoints/auth'
