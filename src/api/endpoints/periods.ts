@@ -4,7 +4,7 @@ import type { InventoryPeriod, CreatePeriodInput } from '../types'
 
 export const PeriodAPI = {
   all: (token: string) =>
-    apiFetch<{ data: InventoryPeriod[] }>('/inventory/periods', token),
+    apiFetch<InventoryPeriod[] >('/inventory/periods', token),
 
   active: (token: string) =>
     apiFetch<InventoryPeriod | null>('/inventory/periods/active', token),

@@ -4,6 +4,7 @@ import LoginView from '../views/LoginView.vue'
 import SignupView from '../views/SignUpView.vue'
 import DashboardView from '../views/DashboardView.vue'
 import CategoriesView from '../views/CategoriesView.vue'
+import PeriodsView from '../views/PeriodsView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -12,6 +13,7 @@ const router = createRouter({
     { path: '/login', component: LoginView },
     { path: '/signup', component: SignupView },
     { path: '/categories', component: CategoriesView },
+    { path: '/periods', component: PeriodsView }
   ],
 })
 

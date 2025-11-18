@@ -50,8 +50,7 @@ export const usePeriodsStore = defineStore('periods', {
       this.error = null
       try {
         const res = await PeriodAPI.all(auth.token)
-        // res is { data: InventoryPeriod[] }
-        this.allPeriods = res.data ?? []
+        this.allPeriods = res ?? []
       } catch (err: any) {
         this.error = err.message ?? String(err)
       } finally {

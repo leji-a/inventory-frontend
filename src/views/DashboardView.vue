@@ -56,9 +56,14 @@ function logout() {
       <h2>{{ periodStore.activePeriod.name }}</h2>
       <p><strong>Notas:</strong> {{ periodStore.activePeriod.notes || 'N/A' }}</p>
       <p><strong>Fecha inicio:</strong> {{ periodStore.activePeriod.start_date }}</p>
-      <button class="btn-primary" @click="$router.push('/categories')">
-        Ir a Categorías
-      </button>
+      <div class="period-buttons">
+        <button class="btn-primary" @click="$router.push('/categories')">
+          Ir a Categorías
+        </button>
+        <button class="btn-primary" @click="$router.push('/periods')">
+          Ir a Períodos
+        </button>
+      </div>
     </div>
     <div class="filter-box">
       <label>Filtrar:</label>
@@ -125,7 +130,7 @@ function logout() {
 
 .active-period-card button {
   display: block;
-  margin: 0 auto;
+  margin: 0;
 }
 
 .filter-box {
@@ -158,5 +163,12 @@ select {
 .btn-primary:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.period-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
 }
 </style>
