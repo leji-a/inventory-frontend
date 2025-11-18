@@ -47,6 +47,7 @@ function logout() {
 <template>
   <div class="dashboard-wrapper">
     <div class="dashboard-header">
+
       <h1>Dashboard</h1>
       <button class="logout-btn" @click="logout">Logout</button>
     </div>
@@ -55,8 +56,10 @@ function logout() {
       <h2>{{ periodStore.activePeriod.name }}</h2>
       <p><strong>Notas:</strong> {{ periodStore.activePeriod.notes || 'N/A' }}</p>
       <p><strong>Fecha inicio:</strong> {{ periodStore.activePeriod.start_date }}</p>
+      <button class="btn-primary" @click="$router.push('/categories')">
+        Ir a Categorías
+      </button>
     </div>
-
     <div class="filter-box">
       <label>Filtrar:</label>
       <select v-model="filterMode">
@@ -120,6 +123,11 @@ function logout() {
   color: #646cff;
 }
 
+.active-period-card button {
+  display: block;
+  margin: 0 auto;
+}
+
 .filter-box {
   margin-bottom: 1.5rem;
 }
@@ -130,5 +138,25 @@ select {
   border: 1px solid #333;
   padding: 0.5rem;
   border-radius: 6px;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn-primary:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 </style>
