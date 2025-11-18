@@ -1,16 +1,24 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue'
 import { useCategoriesStore } from '../stores/categories'
+import type { Category } from '../api/types'
 import ErrorMessage from '../components/ErrorMessage.vue'
 
 const categoriesStore = useCategoriesStore()
 
+// Crear categoría
 const showCreateForm = ref(false)
 const categoryName = ref('')
 const categoryDescription = ref('')
 const formLoading = ref(false)
 const formError = ref('')
 
+// Editar categoría
+const editingCategory = ref<Category | null>(null)
+const editName = ref('')
+const editDescription = ref('')
+
+// Cargar categorías al montar
 onMounted(async () => {
   try {
     await categoriesStore.fetchAll()
@@ -19,13 +27,14 @@ onMounted(async () => {
   }
 })
 
-// Formatear fechas de forma segura
+// Formatear fechas
 const formatDate = (dateString?: string | null) => {
   if (!dateString) return 'N/A'
   const date = new Date(dateString)
   return isNaN(date.getTime()) ? 'N/A' : date.toLocaleDateString('es-ES')
 }
 
+// Crear categoría
 const isSubmitDisabled = computed(() =>
   formLoading.value || !categoryName.value.trim()
 )
@@ -54,6 +63,7 @@ const handleCreateCategory = async () => {
   }
 }
 
+// Eliminar categoría
 const handleDeleteCategory = async (id: number, name: string) => {
   if (!confirm(`¿Eliminar la categoría "${name}"?`)) return
   try {
@@ -62,11 +72,38 @@ const handleDeleteCategory = async (id: number, name: string) => {
     alert(err.message || 'Error al eliminar la categoría')
   }
 }
+
+// Editar categoría
+const startEditing = (category: Category) => {
+  editingCategory.value = category
+  editName.value = category.name
+  editDescription.value = category.description || ''
+}
+
+const cancelEditing = () => {
+  editingCategory.value = null
+  editName.value = ''
+  editDescription.value = ''
+}
+
+const saveEdit = async () => {
+  if (!editingCategory.value) return
+  try {
+    await categoriesStore.updateCategory(editingCategory.value.id, {
+      name: editName.value.trim(),
+      description: editDescription.value.trim() || undefined
+    })
+    cancelEditing()
+  } catch (err: any) {
+    alert(err.message || 'Error al actualizar la categoría')
+  }
+}
 </script>
 
 <template>
   <div class="categories-view">
 
+    <!-- Header -->
     <div class="header">
       <h1>Gestión de Categorías</h1>
       <button
@@ -81,7 +118,6 @@ const handleDeleteCategory = async (id: number, name: string) => {
     <!-- Crear categoría -->
     <div v-if="showCreateForm" class="create-form">
       <h2>Nueva Categoría</h2>
-
       <form @submit.prevent="handleCreateCategory" class="form">
         <div class="field">
           <label for="categoryName">Nombre *</label>
@@ -133,39 +169,42 @@ const handleDeleteCategory = async (id: number, name: string) => {
       </div>
 
       <div v-else class="categories-grid">
-        <div
-          v-for="category in categoriesStore.items"
-          :key="category.id"
-          class="category-card"
-        >
-          <div class="category-info">
-            <h3>{{ category.name }}</h3>
-            <p v-if="category.description" class="category-description">
-              {{ category.description }}
-            </p>
+        <div v-for="category in categoriesStore.items" :key="category.id" class="category-card">
 
+          <!-- Editar inline -->
+          <div v-if="editingCategory?.id === category.id" class="edit-form">
+            <input v-model="editName" type="text" class="input" placeholder="Nombre" />
+            <input v-model="editDescription" type="text" class="input" placeholder="Descripción" />
+            <button class="btn-primary" @click="saveEdit">Guardar</button>
+            <button class="btn-secondary" @click="cancelEditing">Cancelar</button>
+          </div>
+
+          <!-- Vista normal -->
+          <div v-else class="category-info">
+            <h3>{{ category.name }}</h3>
+            <p v-if="category.description" class="category-description">{{ category.description }}</p>
             <div class="category-meta">
               <span>Creado: {{ formatDate(category.created_at) }}</span>
               <span v-if="category.updated_at">Actualizado: {{ formatDate(category.updated_at) }}</span>
             </div>
           </div>
 
-          <div class="category-actions">
-            <button
-              class="btn-danger"
-              @click="handleDeleteCategory(category.id, category.name)"
-              :disabled="categoriesStore.loading"
-            >
+          <!-- Acciones -->
+          <div class="category-actions" v-if="editingCategory?.id !== category.id">
+            <button class="btn-secondary" @click="startEditing(category)" :disabled="categoriesStore.loading">
+              Editar
+            </button>
+            <button class="btn-danger" @click="handleDeleteCategory(category.id, category.name)" :disabled="categoriesStore.loading">
               Eliminar
             </button>
           </div>
+
         </div>
       </div>
-
     </div>
+
   </div>
 </template>
-
 
 <style scoped>
 .categories-view {

@@ -15,41 +15,34 @@ export async function apiFetch<T>(
     },
   })
 
-  if (res.status === 204) {
+  const text = await res.text()
+
+  // 204 No Content
+  if (res.status === 204 || !text) {
     return null as unknown as T
   }
 
-  const responseText = await res.text()
-  if (!responseText) return null as unknown as T
+  let data: any
+  try {
+    data = JSON.parse(text)
+  } catch {
+    throw new Error(`Failed to parse API response: ${text}`)
+  }
 
-  if (res.status === 422) {
-    try {
-      const errorData = JSON.parse(responseText)
-      if (errorData.found && errorData.found.data !== undefined) {
-        return errorData.found as T
-      }
-    } catch {
-      // ignorar
-    }
+  if (res.status === 422 && data.found) {
+    return data.found as T
   }
 
   if (!res.ok) {
-    throw new Error(`API Error (${res.status}): ${responseText}`)
+    throw new Error(`API Error (${res.status}): ${JSON.stringify(data)}`)
   }
 
-  try {
-    return JSON.parse(responseText) as T
-  } catch (parseError) {
-    throw new Error(`Failed to parse API response: ${responseText}`)
-  }
+  return data as T
 }
-
-
 
 export * from './endpoints/auth'
 export * from './endpoints/products'
 export * from './endpoints/periods'
 export * from './endpoints/records'
 export * from './endpoints/categories'
-
 export * from './types'
