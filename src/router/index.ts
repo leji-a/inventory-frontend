@@ -3,6 +3,7 @@ import { useAuthStore } from '../stores/auth'
 import LoginView from '../views/LoginView.vue'
 import SignupView from '../views/SignUpView.vue'
 import DashboardView from '../views/DashboardView.vue'
+import CategoriesView from '../views/CategoriesView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -10,6 +11,7 @@ const router = createRouter({
     { path: '/', component: DashboardView, meta: { requiresAuth: true } },
     { path: '/login', component: LoginView },
     { path: '/signup', component: SignupView },
+    { path: '/categories', component: CategoriesView },
   ],
 })
 

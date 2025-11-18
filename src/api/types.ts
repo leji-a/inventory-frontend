@@ -79,3 +79,36 @@ export interface ProductHistory {
     quantity: number
   }>
 }
+
+// ========================
+// CATEGORIES
+// ========================
+export interface Category {
+  id: number
+  name: string
+  description?: string
+  owner_id: string
+  created_at: string
+  updated_at?: string | null
+}
+
+export interface CreateCategoryInput {
+  name: string
+  description?: string
+}
+
+export interface UpdateCategoryInput {
+  name?: string
+  description?: string | null
+}
+
+export interface Pagination {
+  page: number
+  limit: number
+  total: number
+}
+
+export interface PaginatedCategories {
+  data: Category[]
+  pagination: Pagination
+}

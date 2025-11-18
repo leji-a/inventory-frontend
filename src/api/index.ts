@@ -4,6 +4,7 @@ export async function apiFetch<T>(
   options: RequestInit = {}
 ): Promise<T> {
   const baseUrl = import.meta.env.VITE_API_URL
+  if (!baseUrl) throw new Error('VITE_API_URL is not defined')
 
   const res = await fetch(`${baseUrl}${endpoint}`, {
     ...options,
@@ -14,17 +15,39 @@ export async function apiFetch<T>(
     },
   })
 
-  if (!res.ok) {
-    const errorText = await res.text()
-    throw new Error(`API Error (${res.status}): ${errorText}`)
+  const responseText = await res.text()
+
+  if (res.status === 422) {
+    try {
+      const errorData = JSON.parse(responseText)
+      if (errorData.found?.data !== undefined) {
+        return errorData.found as T
+      }
+    } catch {
+      // ignore
+    }
   }
 
-  return res.json()
+  if (res.status === 204) {
+    return {} as T
+  }
+
+  if (!res.ok) {
+    throw new Error(`API Error (${res.status}): ${responseText}`)
+  }
+
+  try {
+    return JSON.parse(responseText) as T
+  } catch (err) {
+    throw new Error(`Failed to parse API response: ${responseText}`)
+  }
 }
+
 
 export * from './endpoints/auth'
 export * from './endpoints/products'
 export * from './endpoints/periods'
 export * from './endpoints/records'
+export * from './endpoints/categories'
 
 export * from './types'
