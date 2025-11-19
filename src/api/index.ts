@@ -6,18 +6,20 @@ export async function apiFetch<T>(
   const baseUrl = import.meta.env.VITE_API_URL
   if (!baseUrl) throw new Error('VITE_API_URL is not defined')
 
+  const isFormData = options.body instanceof FormData
+
   const res = await fetch(`${baseUrl}${endpoint}`, {
     ...options,
     headers: {
-      'Content-Type': 'application/json',
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
     },
+    body: options.body, 
   })
 
   const text = await res.text()
 
-  // 204 No Content
   if (res.status === 204 || !text) {
     return null as unknown as T
   }
@@ -27,10 +29,6 @@ export async function apiFetch<T>(
     data = JSON.parse(text)
   } catch {
     throw new Error(`Failed to parse API response: ${text}`)
-  }
-
-  if (res.status === 422 && data.found) {
-    return data.found as T
   }
 
   if (!res.ok) {

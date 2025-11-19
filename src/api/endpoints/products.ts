@@ -1,4 +1,4 @@
-// src/api/products.ts
+// src/api/endpoints/products.ts
 import { apiFetch } from '../index'
 import type { Product, PaginatedProducts, ProductHistory } from '../types'
 
@@ -17,12 +17,37 @@ export const ProductAPI = {
 
   update: (token: string, id: number, data: Partial<Product>) =>
     apiFetch<Product>(`/products/${id}`, token, {
-      method: 'PUT',
+      method: 'PUT', 
       body: JSON.stringify(data),
     }),
 
   remove: (token: string, id: number) =>
     apiFetch<void>(`/products/${id}`, token, { method: 'DELETE' }),
+
+  addImageUrl: (token: string, productId: number, imageUrl: string) =>
+    apiFetch(`/products/${productId}/images/url`, token, {
+      method: 'POST',
+      body: JSON.stringify({ image_url: imageUrl }),
+    }),
+
+  uploadImage: (token: string, productId: number, file: Blob) => {
+    const fd = new FormData()
+    fd.append('file', file)
+
+    return apiFetch(`/products/${productId}/images`, token, {
+      method: 'POST',
+      body: fd,
+    })
+  },
+
+  deleteImage: (token: string, productId: number, imageId: number) =>
+    apiFetch(`/products/${productId}/images/${imageId}`, token, { method: 'DELETE' }),
+
+  reorderImages: (token: string, productId: number, order: number[]) =>
+    apiFetch(`/products/${productId}/images/reorder`, token, {
+      method: 'PUT',
+      body: JSON.stringify({ order }),
+    }),
 
   history: (token: string, id: number) =>
     apiFetch<ProductHistory>(`/inventory/products/${id}/history`, token),

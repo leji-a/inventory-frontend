@@ -63,6 +63,9 @@ function logout() {
         <button class="btn-primary" @click="$router.push('/periods')">
           Ir a Períodos
         </button>
+        <button class="btn-primary" @click="$router.push('/products')">
+          Ir a Productos
+        </button>
       </div>
     </div>
     <div class="filter-box">

@@ -6,6 +6,7 @@ import DashboardView from '../views/DashboardView.vue'
 import CategoriesView from '../views/CategoriesView.vue'
 import PeriodsView from '../views/PeriodsView.vue'
 import PeriodDetailsView from '../views/PeriodDetailsView.vue'
+import ProductsView from '../views/ProductsView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -15,7 +16,8 @@ const router = createRouter({
     { path: '/signup', component: SignupView },
     { path: '/categories', component: CategoriesView },
     { path: '/periods', component: PeriodsView },
-    { path: '/periods/:id', component: PeriodDetailsView, props: true }
+    { path: '/periods/:id', component: PeriodDetailsView, props: true },
+    { path: '/products', component: ProductsView }
   ],
 })
 

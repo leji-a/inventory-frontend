@@ -18,6 +18,20 @@ export interface Product {
   images?: string[]
 }
 
+export interface CreateProductInput {
+  name: string
+  price: number
+  categoryIds?: number[]
+  images?: string[]
+}
+
+export interface UpdateProductInput {
+  name?: string
+  price?: number
+  categoryIds?: number[]
+  images?: string[]
+}
+
 // ========================
 // PAGINATED PRODUCTS
 // ========================
