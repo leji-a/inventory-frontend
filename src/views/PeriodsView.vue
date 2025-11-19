@@ -157,6 +157,7 @@ onMounted(async () => {
             >
               Cerrar período
             </button>
+            <button class="btn-primary" @click="$router.push(`/periods/${p.id}`)">Ver detalles</button>
           </div>
         </div>
       </div>
