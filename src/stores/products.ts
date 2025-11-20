@@ -7,6 +7,8 @@ interface ProductsState {
   items: Product[]
   loading: boolean
   error: string | null
+  uploadingImage: boolean
+  imageError: string | null
 }
 
 export const useProductsStore = defineStore('products', {
@@ -14,6 +16,8 @@ export const useProductsStore = defineStore('products', {
     items: [],
     loading: false,
     error: null,
+    uploadingImage: false,
+    imageError: null,
   }),
 
   persist: true,
@@ -35,33 +39,14 @@ export const useProductsStore = defineStore('products', {
       }
     },
 
-    async addProduct(
-      payload: { name: string; price: number },
-      opts?: { imageUrl?: string | null; imageFile?: File | null }
-    ) {
+    async addProduct(payload: { name: string; price: number }) {
       const auth = useAuthStore()
       if (!auth.token) throw new Error('Not authenticated')
 
+      this.error = null
+
       const created = await ProductAPI.create(auth.token, payload)
       this.items.push(created)
-
-      // Solo enviar si la URL es válida
-      const url = opts?.imageUrl?.trim()
-      if (url && url.startsWith('http')) {
-        try {
-          await ProductAPI.addImageUrl(auth.token, created.id, url)
-        } catch (e) {
-          console.warn('addImageUrl failed', e)
-        }
-      }
-
-      if (opts?.imageFile) {
-        try {
-          await ProductAPI.uploadImage(auth.token, created.id, opts.imageFile)
-        } catch (e) {
-          console.warn('uploadImage failed', e)
-        }
-      }
 
       return created
     },
@@ -76,11 +61,12 @@ export const useProductsStore = defineStore('products', {
 
     async updateProduct(
       id: number,
-      payload: { name?: string; price?: number },
-      opts?: { imageUrl?: string | null; imageFile?: File | null }
+      payload: { name?: string; price?: number }
     ) {
       const auth = useAuthStore()
       if (!auth.token) throw new Error('Not authenticated')
+
+      this.error = null
 
       const updated = await ProductAPI.update(auth.token, id, payload)
 
@@ -89,26 +75,101 @@ export const useProductsStore = defineStore('products', {
         this.items[idx] = { ...this.items[idx], ...updated }
       }
 
-      // URL válida
-      const url = opts?.imageUrl?.trim()
-      if (url && url.startsWith('http')) {
-        try {
-          await ProductAPI.addImageUrl(auth.token, id, url)
-        } catch (e) {
-          console.warn('addImageUrl failed', e)
-        }
-      }
-
-      // Archivo
-      if (opts?.imageFile) {
-        try {
-          await ProductAPI.uploadImage(auth.token, id, opts.imageFile)
-        } catch (e) {
-          console.warn('uploadImage failed', e)
-        }
-      }
-
       return updated
+    },
+
+    // ✅ Agregar imagen desde URL
+    async addImageUrl(productId: number, imageUrl: string) {
+      const auth = useAuthStore()
+      if (!auth.token) throw new Error('Not authenticated')
+
+      this.uploadingImage = true
+      this.imageError = null
+
+      try {
+        console.log('📤 Agregando URL de imagen...', imageUrl)
+        const updatedProduct = await ProductAPI.addImageUrl(auth.token, productId, imageUrl)
+        console.log('✅ URL agregada correctamente')
+
+        // Actualizar el producto en el store
+        const idx = this.items.findIndex(p => p.id === productId)
+        if (idx !== -1) {
+          this.items[idx] = updatedProduct
+        }
+
+        return updatedProduct
+      } catch (err: any) {
+        console.error('❌ Error al agregar URL:', err)
+        this.imageError = err.message ?? 'Error al agregar la imagen'
+        throw err
+      } finally {
+        this.uploadingImage = false
+      }
+    },
+
+    // ✅ Subir imagen desde archivo
+    async uploadImageFile(productId: number, file: File) {
+      const auth = useAuthStore()
+      if (!auth.token) throw new Error('Not authenticated')
+
+      this.uploadingImage = true
+      this.imageError = null
+
+      try {
+        console.log('📤 Subiendo archivo de imagen...', file.name)
+        const updatedProduct = await ProductAPI.uploadImage(auth.token, productId, file)
+        console.log('✅ Imagen subida correctamente')
+
+        // Actualizar el producto en el store
+        const idx = this.items.findIndex(p => p.id === productId)
+        if (idx !== -1) {
+          this.items[idx] = updatedProduct
+        }
+
+        return updatedProduct
+      } catch (err: any) {
+        console.error('❌ Error al subir imagen:', err)
+        
+        // Mejorar el mensaje de error de RLS
+        if (err.message?.includes('row-level security')) {
+          this.imageError = 'Error de permisos: No tienes acceso para subir imágenes. Contacta al administrador.'
+        } else {
+          this.imageError = err.message ?? 'Error al subir la imagen'
+        }
+        
+        throw err
+      } finally {
+        this.uploadingImage = false
+      }
+    },
+
+    // ✅ Eliminar imagen
+    async deleteImage(productId: number, imageId: number) {
+      const auth = useAuthStore()
+      if (!auth.token) throw new Error('Not authenticated')
+
+      this.uploadingImage = true
+      this.imageError = null
+
+      try {
+        console.log('🗑️ Eliminando imagen...', imageId)
+        const updatedProduct = await ProductAPI.deleteImage(auth.token, productId, imageId)
+        console.log('✅ Imagen eliminada correctamente')
+
+        // Actualizar el producto en el store
+        const idx = this.items.findIndex(p => p.id === productId)
+        if (idx !== -1) {
+          this.items[idx] = updatedProduct
+        }
+
+        return updatedProduct
+      } catch (err: any) {
+        console.error('❌ Error al eliminar imagen:', err)
+        this.imageError = err.message ?? 'Error al eliminar la imagen'
+        throw err
+      } finally {
+        this.uploadingImage = false
+      }
     },
   },
 })

@@ -1,6 +1,28 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+
+const placeholder = 'https://via.placeholder.com/240x160?text=No+Image'
+
+const props = defineProps<{
+  product: {
+    id: number
+    name: string
+    price: number
+    image?: string
+    categories: string[]
+    quantity?: number | null
+    notes?: string
+  }
+}>()
+
+const productImage = computed(() => {
+  return props.product.image || placeholder
+})
+</script>
+
 <template>
   <div class="product-card">
-    <img :src="product.image || placeholder" :alt="product.name" class="product-image" />
+    <img :src="productImage" :alt="product.name" class="product-image" />
 
     <div class="product-info">
       <h3 class="product-name">{{ product.name }}</h3>
@@ -22,22 +44,6 @@
     </div>
   </div>
 </template>
-
-<script setup lang="ts">
-const placeholder = 'https://via.placeholder.com/240x160?text=No+Image'
-
-defineProps<{
-  product: {
-    id: number
-    name: string
-    price: number
-    image?: string
-    categories: string[]
-    quantity?: number | null
-    notes?: string
-  }
-}>()
-</script>
 
 <style scoped>
 .product-card {

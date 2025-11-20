@@ -9,13 +9,19 @@ export interface AuthResponse {
 // ========================
 // PRODUCTS
 // ========================
+export interface ProductImage {
+  id: number
+  image_url: string
+  display_order: number
+}
+
 export interface Product {
   id: number
   name: string
   price: number
   categoryIds?: number[]
   categoryNames?: string[]
-  images?: string[]
+  images?: ProductImage[]
 }
 
 export interface CreateProductInput {

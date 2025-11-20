@@ -25,7 +25,7 @@ export const ProductAPI = {
     apiFetch<void>(`/products/${id}`, token, { method: 'DELETE' }),
 
   addImageUrl: (token: string, productId: number, imageUrl: string) =>
-    apiFetch(`/products/${productId}/images/url`, token, {
+    apiFetch<Product>(`/products/${productId}/images/url`, token, {
       method: 'POST',
       body: JSON.stringify({ image_url: imageUrl }),
     }),
@@ -34,17 +34,19 @@ export const ProductAPI = {
     const fd = new FormData()
     fd.append('file', file)
 
-    return apiFetch(`/products/${productId}/images`, token, {
+    return apiFetch<Product>(`/products/${productId}/images`, token, {
       method: 'POST',
       body: fd,
     })
   },
 
   deleteImage: (token: string, productId: number, imageId: number) =>
-    apiFetch(`/products/${productId}/images/${imageId}`, token, { method: 'DELETE' }),
+    apiFetch<Product>(`/products/${productId}/images/${imageId}`, token, { 
+      method: 'DELETE' 
+    }),
 
   reorderImages: (token: string, productId: number, order: number[]) =>
-    apiFetch(`/products/${productId}/images/reorder`, token, {
+    apiFetch<Product>(`/products/${productId}/images/reorder`, token, {
       method: 'PUT',
       body: JSON.stringify({ order }),
     }),
