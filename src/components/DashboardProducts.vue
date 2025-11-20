@@ -47,7 +47,7 @@ function formatProduct(p: Product) {
     id: p.id,
     name: p.name,
     price: p.price,
-    image: p.images?.[0] ?? '',
+    image: p.images?.[0]?.image_url ?? '',
     categories: p.categoryNames ?? [],
     quantity: recordMap.value[p.id]?.quantity ?? null,
     notes: recordMap.value[p.id]?.notes ?? ''

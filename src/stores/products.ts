@@ -1,3 +1,4 @@
+// src/stores/products.ts
 import { defineStore } from 'pinia'
 import { ProductAPI } from '../api/endpoints/products'
 import type { Product } from '../api/types'
@@ -7,6 +8,9 @@ interface ProductsState {
   items: Product[]
   loading: boolean
   error: string | null
+  currentPage: number
+  totalPages: number
+  limit: number
   uploadingImage: boolean
   imageError: string | null
 }
@@ -16,160 +20,163 @@ export const useProductsStore = defineStore('products', {
     items: [],
     loading: false,
     error: null,
+    currentPage: 1,
+    totalPages: 1,
+    limit: 20,
     uploadingImage: false,
     imageError: null,
   }),
 
-  persist: true,
-
   actions: {
-    async fetchAll() {
+    async fetchAll(page = 1, limit = 20) {
       const auth = useAuthStore()
-      if (!auth.token) return
+      if (!auth.token) throw new Error('Not authenticated')
 
       this.loading = true
       this.error = null
+
       try {
-        const res = await ProductAPI.list(auth.token)
-        this.items = res.data ?? []
+        const res = await ProductAPI.list(auth.token, page, limit)
+        this.items = res.data.map((p: Product) => ({
+          ...p,
+          categoryIds: p.categoryIds ?? [],
+          images: p.images ?? []
+        }))
+        this.currentPage = page
+        this.totalPages = res.pagination.totalPages ?? 1
+        this.limit = limit
       } catch (err: any) {
-        this.error = err.message ?? String(err)
+        this.error = err.message ?? 'Error al cargar productos'
       } finally {
         this.loading = false
       }
     },
 
-    async addProduct(payload: { name: string; price: number }) {
+    async addProduct(payload: { name: string; price: number; categoryIds?: number[] }) {
       const auth = useAuthStore()
       if (!auth.token) throw new Error('Not authenticated')
-
       this.error = null
 
-      const created = await ProductAPI.create(auth.token, payload)
-      this.items.push(created)
+      try {
+        const normalizedPayload = {
+          name: payload.name,
+          price: payload.price,
+          categoryIds: payload.categoryIds ?? []
+        }
 
-      return created
+        const created = await ProductAPI.create(auth.token, normalizedPayload)
+        this.items.push({
+          ...created,
+          categoryIds: created.categoryIds ?? [],
+          images: created.images ?? []
+        })
+        return created
+      } catch (err: any) {
+        this.error = err.message ?? 'Error al crear producto'
+        throw err
+      }
+    },
+
+    async updateProduct(
+      id: number,
+      payload: { name?: string; price?: number; categoryIds?: number[] }
+    ) {
+      const auth = useAuthStore()
+      if (!auth.token) throw new Error('Not authenticated')
+      this.error = null
+
+      try {
+        const normalizedPayload: Partial<{ name: string; price: number; categoryIds: number[] }> = {}
+        if (payload.name !== undefined) normalizedPayload.name = payload.name
+        if (payload.price !== undefined) normalizedPayload.price = payload.price
+        if (payload.categoryIds !== undefined) normalizedPayload.categoryIds = payload.categoryIds
+
+        const updated = await ProductAPI.update(auth.token, id, normalizedPayload)
+        const idx = this.items.findIndex(p => p.id === id)
+        if (idx !== -1) {
+          this.items[idx] = {
+            ...this.items[idx],
+            ...updated,
+            categoryIds: updated.categoryIds ?? [],
+            images: updated.images ?? []
+          }
+        }
+        return updated
+      } catch (err: any) {
+        this.error = err.message ?? 'Error al actualizar producto'
+        throw err
+      }
     },
 
     async removeProduct(id: number) {
       const auth = useAuthStore()
       if (!auth.token) throw new Error('Not authenticated')
-
-      await ProductAPI.remove(auth.token, id)
-      this.items = this.items.filter(i => i.id !== id)
-    },
-
-    async updateProduct(
-      id: number,
-      payload: { name?: string; price?: number }
-    ) {
-      const auth = useAuthStore()
-      if (!auth.token) throw new Error('Not authenticated')
-
       this.error = null
 
-      const updated = await ProductAPI.update(auth.token, id, payload)
-
-      const idx = this.items.findIndex(p => p.id === id)
-      if (idx !== -1) {
-        this.items[idx] = { ...this.items[idx], ...updated }
+      try {
+        await ProductAPI.remove(auth.token, id)
+        this.items = this.items.filter(p => p.id !== id)
+      } catch (err: any) {
+        this.error = err.message ?? 'Error al eliminar producto'
+        throw err
       }
-
-      return updated
     },
 
-    // ✅ Agregar imagen desde URL
     async addImageUrl(productId: number, imageUrl: string) {
       const auth = useAuthStore()
       if (!auth.token) throw new Error('Not authenticated')
-
       this.uploadingImage = true
       this.imageError = null
 
       try {
-        console.log('📤 Agregando URL de imagen...', imageUrl)
         const updatedProduct = await ProductAPI.addImageUrl(auth.token, productId, imageUrl)
-        console.log('✅ URL agregada correctamente')
-
-        // Actualizar el producto en el store
         const idx = this.items.findIndex(p => p.id === productId)
-        if (idx !== -1) {
-          this.items[idx] = updatedProduct
-        }
-
+        if (idx !== -1) this.items[idx] = updatedProduct
         return updatedProduct
       } catch (err: any) {
-        console.error('❌ Error al agregar URL:', err)
-        this.imageError = err.message ?? 'Error al agregar la imagen'
+        this.imageError = err.message ?? 'Error al agregar imagen'
         throw err
       } finally {
         this.uploadingImage = false
       }
     },
 
-    // ✅ Subir imagen desde archivo
     async uploadImageFile(productId: number, file: File) {
       const auth = useAuthStore()
       if (!auth.token) throw new Error('Not authenticated')
-
       this.uploadingImage = true
       this.imageError = null
 
       try {
-        console.log('📤 Subiendo archivo de imagen...', file.name)
         const updatedProduct = await ProductAPI.uploadImage(auth.token, productId, file)
-        console.log('✅ Imagen subida correctamente')
-
-        // Actualizar el producto en el store
         const idx = this.items.findIndex(p => p.id === productId)
-        if (idx !== -1) {
-          this.items[idx] = updatedProduct
-        }
-
+        if (idx !== -1) this.items[idx] = updatedProduct
         return updatedProduct
       } catch (err: any) {
-        console.error('❌ Error al subir imagen:', err)
-        
-        // Mejorar el mensaje de error de RLS
-        if (err.message?.includes('row-level security')) {
-          this.imageError = 'Error de permisos: No tienes acceso para subir imágenes. Contacta al administrador.'
-        } else {
-          this.imageError = err.message ?? 'Error al subir la imagen'
-        }
-        
+        this.imageError = err.message ?? 'Error al subir imagen'
         throw err
       } finally {
         this.uploadingImage = false
       }
     },
 
-    // ✅ Eliminar imagen
     async deleteImage(productId: number, imageId: number) {
       const auth = useAuthStore()
       if (!auth.token) throw new Error('Not authenticated')
-
       this.uploadingImage = true
       this.imageError = null
 
       try {
-        console.log('🗑️ Eliminando imagen...', imageId)
         const updatedProduct = await ProductAPI.deleteImage(auth.token, productId, imageId)
-        console.log('✅ Imagen eliminada correctamente')
-
-        // Actualizar el producto en el store
         const idx = this.items.findIndex(p => p.id === productId)
-        if (idx !== -1) {
-          this.items[idx] = updatedProduct
-        }
-
+        if (idx !== -1) this.items[idx] = updatedProduct
         return updatedProduct
       } catch (err: any) {
-        console.error('❌ Error al eliminar imagen:', err)
-        this.imageError = err.message ?? 'Error al eliminar la imagen'
+        this.imageError = err.message ?? 'Error al eliminar imagen'
         throw err
       } finally {
         this.uploadingImage = false
       }
     },
-  },
+  }
 })

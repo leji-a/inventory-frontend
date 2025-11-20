@@ -1,57 +1,75 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProductsStore } from '../stores/products'
+import { useCategoriesStore } from '../stores/categories'
 import ProductImagesManager from '../components/ProductImagesManager.vue'
 import ErrorMessage from '../components/ErrorMessage.vue'
+import CategoriesSelector from '../components/CategoriesSelector.vue'
 
 const router = useRouter()
 const store = useProductsStore()
-
-// Campos del form
-const name = ref('')
-const price = ref(0)
-
-// Para edición
-const editingId = ref<number | null>(null)
+const categoriesStore = useCategoriesStore()
 
 // UI states
 const showCreateForm = ref(false)
 const saving = ref(false)
 const successMessage = ref('')
 
-function startCreate() {
-  editingId.value = null
-  name.value = ''
-  price.value = 0
+// Para edición
+const editingId = ref<number | null>(null)
+
+// Formulario reactivo
+const form = reactive({
+  name: '',
+  price: 0,
+  categoryIds: [] as number[]
+})
+
+// --- Funciones ---
+function resetForm() {
+  form.name = ''
+  form.price = 0
+  form.categoryIds = []
+  store.error = null
   store.imageError = null
   successMessage.value = ''
+}
+
+function startCreate() {
+  editingId.value = null
+  resetForm()
   showCreateForm.value = true
 }
 
 function cancelCreate() {
+  resetForm()
   showCreateForm.value = false
-  startCreate()
 }
 
 function startEdit(product: any) {
   editingId.value = product.id
-  name.value = product.name
-  price.value = product.price
+  form.name = product.name
+  form.price = product.price
+  form.categoryIds = product.categoryIds ?? []
+  store.error = null
   store.imageError = null
   successMessage.value = ''
   showCreateForm.value = false
 }
 
-function cancelEdit() {
-  editingId.value = null
-  name.value = ''
-  price.value = 0
-}
+  //function cancelEdit() {
+  //  editingId.value = null
+  //  resetForm()
+  //}
 
 async function saveBasicInfo() {
-  if (!name.value.trim()) {
+  if (!form.name.trim()) {
     store.error = 'El nombre es obligatorio'
+    return
+  }
+  if (form.price <= 0) {
+    store.error = 'El precio debe ser mayor a 0'
     return
   }
 
@@ -63,33 +81,29 @@ async function saveBasicInfo() {
   try {
     if (editingId.value === null) {
       // Crear producto
-      const created = await store.addProduct({ 
-        name: name.value, 
-        price: price.value 
+      const created = await store.addProduct({
+        name: form.name,
+        price: form.price,
+        categoryIds: form.categoryIds
       })
-      
+
       successMessage.value = '✅ Producto creado. Ahora puedes agregar imágenes.'
-      
-      // Cambiar a modo edición para agregar imágenes
       editingId.value = created.id
       showCreateForm.value = false
-      
+
     } else {
       // Actualizar producto
-      await store.updateProduct(editingId.value, { 
-        name: name.value, 
-        price: price.value 
+      await store.updateProduct(editingId.value, {
+        name: form.name,
+        price: form.price,
+        categoryIds: form.categoryIds
       })
-      
+
       successMessage.value = '✅ Producto actualizado correctamente'
-      
-      setTimeout(() => {
-        successMessage.value = ''
-      }, 2000)
+      setTimeout(() => { successMessage.value = '' }, 2000)
     }
 
     await store.fetchAll()
-
   } catch (err: any) {
     console.error('Error guardando producto:', err)
     store.error = err.message || 'Error al guardar el producto'
@@ -137,21 +151,26 @@ const handleDeleteProduct = async (id: number, name: string) => {
   }
 }
 
-const isSaveDisabled = computed(() => 
-  saving.value || store.uploadingImage || !name.value.trim()
+const isSaveDisabled = computed(() =>
+  saving.value || store.uploadingImage || !form.name.trim()
 )
+
+// --- Montaje ---
+onMounted(async () => {
+  await store.fetchAll()
+  if (categoriesStore.items.length === 0) {
+    await categoriesStore.fetchAll()
+  }
+})
 </script>
 
 <template>
   <div class="products-view">
 
+    <!-- Header -->
     <div class="header">
-      <button class="btn-secondary" @click="router.push('/')">
-        ⬅ Volver al Dashboard
-      </button>
-      
+      <button class="btn-secondary" @click="router.push('/')">⬅ Volver al Dashboard</button>
       <h1>Gestión de Productos</h1>
-
       <button
         class="btn-primary"
         @click="showCreateForm ? cancelCreate() : startCreate()"
@@ -161,173 +180,90 @@ const isSaveDisabled = computed(() =>
       </button>
     </div>
 
-    <!-- Formulario de creación -->
-    <div v-if="showCreateForm" class="create-form">
-      <h2>Nuevo Producto</h2>
+    <!-- Formulario de creación / edición -->
+    <div v-if="showCreateForm || editingId !== null" class="create-form">
+      <h2>{{ editingId === null ? 'Nuevo Producto' : 'Editar Producto' }}</h2>
+
       <form @submit.prevent="saveBasicInfo" class="form">
 
         <div class="field">
-          <label for="productName">Nombre *</label>
-          <input
-            id="productName"
-            v-model="name"
-            type="text"
-            placeholder="Nombre del producto"
-            class="input"
-            :disabled="saving"
-          />
+          <label>Nombre *</label>
+          <input v-model="form.name" type="text" class="input" :disabled="saving" />
         </div>
 
         <div class="field">
-          <label for="productPrice">Precio *</label>
-          <input
-            id="productPrice"
-            v-model.number="price"
-            type="number"
-            step="0.01"
-            placeholder="0.00"
-            class="input"
-            :disabled="saving"
-          />
+          <label>Precio *</label>
+          <input v-model.number="form.price" type="number" step="0.01" class="input" :disabled="saving" />
+        </div>
+
+        <div class="field">
+          <label>Categorías</label>
+          <CategoriesSelector v-model="form.categoryIds" />
         </div>
 
         <ErrorMessage :message="store.error" />
-        
+
         <div v-if="successMessage" class="success-message">
           {{ successMessage }}
         </div>
 
         <div class="form-actions">
-          <button 
-            class="btn-primary" 
-            type="submit"
-            :disabled="isSaveDisabled"
-          >
-            {{ saving ? 'Guardando...' : 'Crear Producto' }}
+          <button class="btn-primary" type="submit" :disabled="isSaveDisabled">
+            {{ saving ? 'Guardando...' : editingId === null ? 'Crear Producto' : 'Guardar cambios' }}
           </button>
         </div>
 
-        <p class="info-text">
+        <p class="info-text" v-if="editingId === null">
           💡 Después de crear el producto podrás agregar imágenes
         </p>
-
       </form>
+
+      <!-- Gestor de imágenes solo si estamos editando -->
+      <div v-if="editingId !== null" class="images-section">
+        <h4>Imágenes del producto</h4>
+
+        <ErrorMessage :message="store.imageError" />
+        <div v-if="successMessage" class="success-message">{{ successMessage }}</div>
+
+        <ProductImagesManager
+          :product-id="editingId!"
+          :images="store.items.find(p => p.id === editingId)?.images || []"
+          :uploading="store.uploadingImage"
+          @add-url="(url) => handleAddImageUrl(editingId!, url)"
+          @upload-file="(file) => handleUploadImage(editingId!, file)"
+          @delete-image="(imageId) => handleDeleteImage(editingId!, imageId)"
+        />
+      </div>
     </div>
 
     <!-- Lista de productos -->
     <div class="products-list">
-
-      <div v-if="store.loading" class="loading">
-        Cargando productos...
-      </div>
-
-      <div v-else-if="store.items.length === 0" class="empty-state">
-        <p>No hay productos disponibles</p>
-      </div>
-
+      <div v-if="store.loading" class="loading">Cargando productos...</div>
+      <div v-else-if="store.items.length === 0" class="empty-state">No hay productos disponibles</div>
       <div v-else class="products-grid">
         <div v-for="product in store.items" :key="product.id" class="product-card">
-
-          <!-- Modo edición -->
-          <div v-if="editingId === product.id" class="edit-section">
-            <div class="edit-header">
-              <h3>Editando: {{ product.name }}</h3>
-              <button class="btn-secondary" @click="cancelEdit">
-                ✕ Cerrar
-              </button>
-            </div>
-
-            <!-- Información básica -->
-            <div class="basic-info-form">
-              <div class="field">
-                <label>Nombre *</label>
-                <input v-model="name" type="text" class="input" placeholder="Nombre" />
-              </div>
-
-              <div class="field">
-                <label>Precio *</label>
-                <input v-model.number="price" type="number" step="0.01" class="input" placeholder="0.00" />
-              </div>
-
-              <button 
-                class="btn-primary" 
-                @click="saveBasicInfo" 
-                :disabled="isSaveDisabled"
-              >
-                {{ saving ? 'Guardando...' : 'Guardar cambios' }}
-              </button>
-            </div>
-
-            <!-- Gestor de imágenes -->
-            <div class="images-section">
-              <h4>Imágenes del producto</h4>
-              
-              <ErrorMessage :message="store.imageError" />
-              
-              <div v-if="successMessage" class="success-message">
-                {{ successMessage }}
-              </div>
-
-              <ProductImagesManager
-                :product-id="product.id"
-                :images="product.images || []"
-                :uploading="store.uploadingImage"
-                @add-url="(url) => handleAddImageUrl(product.id, url)"
-                @upload-file="(file) => handleUploadImage(product.id, file)"
-                @delete-image="(imageId) => handleDeleteImage(product.id, imageId)"
-              />
-            </div>
-          </div>
-
-          <!-- Modo vista -->
-          <div v-else class="product-view">
+          <div class="product-view">
             <div class="product-info">
               <div class="product-header">
                 <div>
                   <h3>{{ product.name }}</h3>
                   <p class="product-price">${{ product.price.toFixed(2) }}</p>
                 </div>
-
                 <div v-if="product.images?.length" class="images-preview">
-                  <img 
-                    v-for="img in product.images.slice(0, 3)"
-                    :key="img.id"
-                    :src="img.image_url"
-                    class="product-thumbnail"
-                    :alt="`${product.name} - imagen ${img.display_order + 1}`"
-                  />
-                  <span v-if="product.images.length > 3" class="more-images">
-                    +{{ product.images.length - 3 }}
-                  </span>
+                  <img v-for="img in product.images.slice(0, 3)" :key="img.id" :src="img.image_url" class="product-thumbnail" :alt="`${product.name} - imagen ${img.display_order + 1}`"/>
+                  <span v-if="product.images.length > 3" class="more-images">+{{ product.images.length - 3 }}</span>
                 </div>
                 <p v-else class="no-images">Sin imágenes</p>
               </div>
-
               <div v-if="product.categoryNames?.length" class="product-categories">
-                <span v-for="cat in product.categoryNames" :key="cat" class="category-badge">
-                  {{ cat }}
-                </span>
+                <span v-for="cat in product.categoryNames" :key="cat" class="category-badge">{{ cat }}</span>
               </div>
             </div>
-
             <div class="product-actions">
-              <button 
-                class="btn-secondary" 
-                @click="startEdit(product)" 
-                :disabled="store.loading || saving || store.uploadingImage"
-              >
-                ✏️ Editar
-              </button>
-              <button 
-                class="btn-danger" 
-                @click="handleDeleteProduct(product.id, product.name)" 
-                :disabled="store.loading || saving || store.uploadingImage"
-              >
-                🗑️ Eliminar
-              </button>
+              <button class="btn-secondary" @click="startEdit(product)" :disabled="store.loading || saving || store.uploadingImage">Editar</button>
+              <button class="btn-danger" @click="handleDeleteProduct(product.id, product.name)" :disabled="store.loading || saving || store.uploadingImage">Eliminar</button>
             </div>
           </div>
-
         </div>
       </div>
     </div>
