@@ -1,7 +1,11 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { Product, InventoryRecord, InventoryPeriod } from '../api/types'
 import ProductCard from './ProductCard.vue'
+import { usePeriodsStore } from '../stores/periods'
+import { useRecordsStore } from '../stores/records'
+import { useAuthStore } from '../stores/auth'
+import { RecordAPI } from '../api/endpoints/records'
 
 const props = defineProps<{
   products?: Product[] | null
@@ -10,48 +14,57 @@ const props = defineProps<{
   filterMode?: 'all' | 'included' | 'excluded'
 }>()
 
-const productsSafe = computed(() => (Array.isArray(props.products) ? props.products : []))
-const recordsSafe = computed(() => (Array.isArray(props.records) ? props.records : []))
-const filterMode = computed(() => props.filterMode ?? 'all')
+const emit = defineEmits<{
+  (e: 'update:records', records: InventoryRecord[]): void
+}>()
 
+const periodsStore = usePeriodsStore()
+const recordsStore = useRecordsStore()
+const authStore = useAuthStore()
+
+const productsSafe = computed(() => props.products ?? [])
+const recordsSafe = computed(() => props.records ?? [])
 const recordMap = computed(() => {
   const map: Record<number, InventoryRecord> = {}
   for (const r of recordsSafe.value) {
-    if (r && typeof r.product_id === 'number') map[r.product_id] = r
+    if (r?.product_id != null) map[r.product_id] = r
   }
   return map
 })
 
-const includedList = computed(() => {
-  if (!props.period) return []
-  const ids = recordsSafe.value.map(r => r.product_id)
-  return productsSafe.value.filter(p => ids.includes(p.id))
-})
-
-const excludedList = computed(() => {
-  if (!props.period) return productsSafe.value // if period exists but no records, all are excluded
-  const ids = recordsSafe.value.map(r => r.product_id)
-  return productsSafe.value.filter(p => !ids.includes(p.id))
-})
-
+const filterMode = computed(() => props.filterMode ?? 'all')
 const finalList = computed(() => {
   switch (filterMode.value) {
-    case 'included': return includedList.value
-    case 'excluded': return excludedList.value
+    case 'included': return productsSafe.value.filter(p => recordMap.value[p.id])
+    case 'excluded': return productsSafe.value.filter(p => !recordMap.value[p.id])
     default: return productsSafe.value
   }
 })
 
-function formatProduct(p: Product) {
-  return {
-    id: p.id,
-    name: p.name,
-    price: p.price,
-    image: p.images?.[0]?.image_url ?? '',
-    categories: p.categoryNames ?? [],
-    quantity: recordMap.value[p.id]?.quantity ?? null,
-    notes: recordMap.value[p.id]?.notes ?? ''
-  }
+const successMessage = ref('')
+
+async function handleAddToPeriod(payload: { productId: number; quantity: number; notes: string }) {
+  const period = periodsStore.activePeriod
+  if (!period || !authStore.token) return
+
+  await recordsStore.upsert(period.id, payload.productId, payload.quantity, payload.notes)
+  successMessage.value = '✅ Producto agregado al período'
+  setTimeout(() => (successMessage.value = ''), 2000)
+
+  const updated = await RecordAPI.listByPeriod(authStore.token, period.id)
+  emit('update:records', updated)
+}
+
+async function handleEditRecord(payload: { productId: number; quantity: number; notes: string }) {
+  const period = periodsStore.activePeriod
+  if (!period || !authStore.token) return
+
+  await recordsStore.upsert(period.id, payload.productId, payload.quantity, payload.notes)
+  successMessage.value = '✅ Registro actualizado correctamente'
+  setTimeout(() => (successMessage.value = ''), 2000)
+
+  const updated = await RecordAPI.listByPeriod(authStore.token, period.id)
+  emit('update:records', updated)
 }
 </script>
 
@@ -60,14 +73,26 @@ function formatProduct(p: Product) {
     <h2 class="section-title">Productos</h2>
 
     <div v-if="finalList.length" class="products-grid">
-      <ProductCard
-        v-for="prod in finalList"
-        :key="prod.id"
-        :product="formatProduct(prod)"
-      />
+<ProductCard
+  v-for="p in finalList"
+  :key="p.id"
+  :product="{
+    id: p.id,
+    name: p.name,
+    price: p.price,
+    image: p.images?.[0]?.image_url ?? '',
+    categories: p.categoryNames ?? [],
+    quantity: recordMap[p.id]?.quantity ?? null,
+    notes: recordMap[p.id]?.notes ?? ''
+  }"
+  @add-to-period="handleAddToPeriod"
+  @edit-record="handleEditRecord"
+/>
     </div>
 
     <p v-else>No hay productos disponibles para este filtro.</p>
+
+    <div v-if="successMessage" class="success-message">{{ successMessage }}</div>
   </div>
 </template>
 
@@ -75,14 +100,21 @@ function formatProduct(p: Product) {
 .products-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 1.5rem;
-  padding: 1rem 0;
+  gap: 1rem;
+  margin-top: 1rem;
 }
-
 .section-title {
-  font-size: 1.6rem;
+  font-size: 1.5rem;
   font-weight: 600;
   margin-bottom: 1rem;
-  color: var(--text-main);
+}
+.success-message {
+  margin-top: 1rem;
+  background: rgba(34, 197, 94, 0.15);
+  border-left: 3px solid #22c55e;
+  color: #22c55e;
+  padding: 0.7rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
 }
 </style>
