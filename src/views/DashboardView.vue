@@ -32,10 +32,23 @@ onMounted(async () => {
 })
 
 const products = computed(() => productStore.items ?? [])
-const activeRecords = computed(() => {
-  const p = periodStore.activePeriod
-  if (!p) return []
-  return recordsStore.byPeriod[p.id] ?? []
+// const activeRecords = computed(() => {
+//   const p = periodStore.activePeriod
+//   if (!p) return []
+//   return recordsStore.byPeriod[p.id] ?? []
+// })
+
+const boundRecords = computed({
+  get() {
+    const p = periodStore.activePeriod
+    if (!p) return []
+    return recordsStore.byPeriod[p.id] ?? []
+  },
+  set(newValue) {
+    const p = periodStore.activePeriod
+    if (!p) return
+    recordsStore.byPeriod[p.id] = newValue
+  }
 })
 
 function logout() {
@@ -79,7 +92,7 @@ function logout() {
 
     <DashboardProducts
       :products="products"
-      :records="activeRecords"
+      v-model:records="boundRecords"
       :period="periodStore.activePeriod"
       :filterMode="filterMode"
     />

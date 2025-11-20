@@ -24,4 +24,12 @@ export const RecordAPI = {
       '/inventory/current',
       token
     ),
+
+  delete: (token: string, periodId: number, productId: number) =>
+  apiFetch(
+    `/inventory/periods/${periodId}/records/${productId}`,
+    token,
+    { method: 'DELETE' }
+  ),
+
 }

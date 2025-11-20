@@ -66,33 +66,49 @@ async function handleEditRecord(payload: { productId: number; quantity: number; 
   const updated = await RecordAPI.listByPeriod(authStore.token, period.id)
   emit('update:records', updated)
 }
+
+async function handleDeleteRecord(payload: { productId: number }) {
+  const period = periodsStore.activePeriod
+  if (!period || !authStore.token) return
+
+  if (!confirm("¿Eliminar este producto del período?")) return
+
+  await RecordAPI.delete(authStore.token, period.id, payload.productId)
+
+  successMessage.value = '🗑️ Registro eliminado'
+  setTimeout(() => (successMessage.value = ''), 2000)
+
+  const updated = await RecordAPI.listByPeriod(authStore.token, period.id)
+  emit('update:records', updated)
+}
 </script>
 
 <template>
   <div>
     <h2 class="section-title">Productos</h2>
+    <div v-if="successMessage" class="success-message">{{ successMessage }}</div>
 
     <div v-if="finalList.length" class="products-grid">
-<ProductCard
-  v-for="p in finalList"
-  :key="p.id"
-  :product="{
-    id: p.id,
-    name: p.name,
-    price: p.price,
-    image: p.images?.[0]?.image_url ?? '',
-    categories: p.categoryNames ?? [],
-    quantity: recordMap[p.id]?.quantity ?? null,
-    notes: recordMap[p.id]?.notes ?? ''
-  }"
-  @add-to-period="handleAddToPeriod"
-  @edit-record="handleEditRecord"
-/>
+    <ProductCard
+      v-for="p in finalList"
+      :key="p.id"
+      :product="{
+        id: p.id,
+        name: p.name,
+        price: p.price,
+        image: p.images?.[0]?.image_url ?? '',
+        categories: p.categoryNames ?? [],
+        quantity: recordMap[p.id]?.quantity ?? null,
+        notes: recordMap[p.id]?.notes ?? ''
+      }"
+      @add-to-period="handleAddToPeriod"
+      @edit-record="handleEditRecord"
+      @delete-record="handleDeleteRecord"
+    />
     </div>
 
     <p v-else>No hay productos disponibles para este filtro.</p>
 
-    <div v-if="successMessage" class="success-message">{{ successMessage }}</div>
   </div>
 </template>
 
