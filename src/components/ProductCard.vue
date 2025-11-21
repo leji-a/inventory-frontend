@@ -44,11 +44,17 @@ function save() {
 <template>
   <div class="product-card">
 
-    <img v-if="product.image" :src="product.image" class="product-image" />
+    <div class="image-wrapper">
+      <img v-if="product.image" :src="product.image" class="product-image" />
+      <div v-else class="image-placeholder">Sin imagen</div>
+    </div>
 
     <div class="product-info">
       <h3 class="product-name">{{ product.name }}</h3>
-      <p class="product-price">${{ product.price }}</p>
+
+      <p class="product-price">
+        ${{ product.price }}
+      </p>
 
       <div class="product-categories">
         <span
@@ -60,141 +66,178 @@ function save() {
         </span>
       </div>
 
-      <div v-if="product.quantity !== null">
-        <p class="product-qty"><strong>Cantidad:</strong> {{ product.quantity }}</p>
-        <p class="product-notes" v-if="product.notes"><strong>Nota:</strong> {{ product.notes }}</p>
+      <div v-if="product.quantity !== null" class="record-info">
+        <p><strong>Cantidad:</strong> {{ product.quantity }}</p>
+        <p v-if="product.notes"><strong>Nota:</strong> {{ product.notes }}</p>
       </div>
     </div>
 
-    <!-- Acciones -->
     <div class="actions">
-      <button class="btn-primary" @click="editing = true">
+      <button class="btn" @click="editing = true">
         {{ product.quantity === null ? "Agregar" : "Editar" }}
       </button>
 
       <button
         v-if="product.quantity !== null"
-        class="btn-primary"
-        style="background:#dc2626"
+        class="btn btn-danger"
         @click="emit('delete-record', { productId: product.id })"
       >
         Eliminar
       </button>
     </div>
 
-    <!-- Modal -->
     <div v-if="editing" class="modal">
       <div class="modal-content">
+        <h4 class="modal-title">
+          {{ product.quantity === null ? "Agregar al período" : "Editar registro" }}
+        </h4>
 
-        <h4>{{ product.quantity === null ? "Agregar al período" : "Editar registro" }}</h4>
+        <label class="label">Cantidad</label>
+        <input type="number" v-model.number="quantity" min="1" class="input" />
 
-        <label>Cantidad</label>
-        <input type="number" v-model.number="quantity" min="1" class="input-small" />
-
-        <label>Notas</label>
-        <textarea v-model="notes" class="input-small" style="width:100%"></textarea>
+        <label class="label">Notas</label>
+        <textarea v-model="notes" class="input textarea"></textarea>
 
         <div class="modal-actions">
-          <button class="btn-primary" @click="save">Guardar</button>
-          <button class="btn-primary" style="background:#6b7280" @click="editing = false">Cancelar</button>
+          <button class="btn" @click="save">Guardar</button>
+          <button class="btn btn-secondary" @click="editing = false">Cancelar</button>
         </div>
-
       </div>
     </div>
 
   </div>
 </template>
 
+
 <style scoped>
+
 .product-card {
   background: var(--bg-card);
   border: 1px solid var(--border-light);
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.8rem;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  transition: 0.25s ease;
+  min-width: 240px;
 }
 
 .product-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0px 4px 14px rgba(0, 0, 0, 0.35);
+  transform: translateY(-3px);
+  box-shadow: 0 4px 18px rgba(0,0,0,0.35);
+}
+
+@media (min-width: 640px) {
+  .product-card {
+    grid-template-columns: 160px 1fr;
+    grid-template-areas:
+      "image info"
+      "actions actions";
+    align-items: start;
+  }
+}
+
+.image-wrapper {
+  grid-area: image;
+  width: 100%;
+  height: 160px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #151515;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .product-image {
   width: 100%;
-  height: 180px;
+  height: 100%;
   object-fit: contain;
-  border-radius: 8px;
-  background: #111;
+}
+
+.image-placeholder {
+  color: #666;
+  opacity: 0.7;
+  font-size: 0.9rem;
 }
 
 .product-info {
+  grid-area: info;
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
 }
 
 .product-name {
-  font-size: 1rem;
-  font-weight: 500;
-  color: var(--text-main);
+  font-size: 1.15rem;
+  font-weight: 600;
 }
 
 .product-price {
-  font-weight: bold;
+  font-weight: 700;
   color: var(--accent);
+  font-size: 1.1rem;
   margin: 0.2rem 0;
 }
 
 .product-categories {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.3rem;
+  gap: 0.35rem;
 }
 
 .category-badge {
-  background: #222;
-  border: 1px solid var(--border-light);
-  padding: 0.2rem 0.5rem;
+  background: #111;
+  padding: 0.28rem 0.5rem;
   border-radius: 8px;
+  border: 1px solid var(--border-light);
   font-size: 0.75rem;
   color: var(--text-dim);
 }
 
-.product-qty,
-.product-notes {
-  margin-top: 0.4rem;
+.record-info {
+  margin-top: 0.5rem;
   color: var(--text-dim);
-  font-size: 0.95rem;
 }
 
-/* Botón principal */
-.btn-primary {
+.actions {
+  grid-area: actions;
+  display: flex;
+  gap: 0.5rem;
+}
+
+@media (max-width: 639px) {
+  .actions {
+    flex-direction: column;
+  }
+}
+
+.btn {
   background: var(--accent);
   color: white;
   border: none;
-  padding: 0.7rem 1rem;
+  padding: 0.6rem 0.9rem;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
-  transition: opacity 0.2s;
   width: 100%;
+  transition: opacity 0.2s;
 }
 
-.btn-primary:hover:not(:disabled) {
-  opacity: 0.9;
+.btn:hover {
+  opacity: 0.85;
 }
 
-/* Inputs */
-.input-small {
-  padding: 0.4rem 0.6rem;
-  border-radius: 6px;
-  border: 1px solid var(--border-light);
+.btn-danger {
+  background: #dc2626;
 }
 
-/* Modal */
+.btn-secondary {
+  background: #6b7280;
+}
+
 .modal {
   position: fixed;
   inset: 0;
@@ -202,18 +245,51 @@ function save() {
   display: flex;
   align-items: center;
   justify-content: center;
+  backdrop-filter: blur(1px);
 }
 
 .modal-content {
-  width: 320px;
+  width: 340px;
   background: var(--bg-card);
-  padding: 1rem;
-  border-radius: 12px;
+  padding: 1.3rem;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  animation: pop 0.15s ease;
+}
+
+.modal-title {
+  font-size: 1.15rem;
+  margin-bottom: 0.7rem;
+}
+
+.label {
+  margin-top: 0.5rem;
+  font-weight: 500;
+}
+
+.input {
+  padding: 0.45rem 0.6rem;
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+  margin-top: 0.2rem;
+}
+
+.textarea {
+  height: 80px;
+  resize: none;
 }
 
 .modal-actions {
-  margin-top: 1rem;
   display: flex;
-  gap: 0.5rem;
+  gap: 0.6rem;
+  margin-top: 1rem;
 }
+
+@keyframes pop {
+  from { transform: scale(0.93); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
 </style>
