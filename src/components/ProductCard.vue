@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import type { ProductImage } from '../api/types'
 
 const props = defineProps<{
   product: {
@@ -7,7 +8,8 @@ const props = defineProps<{
     name: string
     price: number
     image: string
-    categories: string[]
+    images?: ProductImage[]
+    categories?: string[]
     quantity: number | null
     notes: string
   }
@@ -22,6 +24,27 @@ const emit = defineEmits<{
 const quantity = ref(props.product.quantity ?? 1)
 const notes = ref(props.product.notes ?? '')
 const editing = ref(false)
+
+const galleryOpen = ref(false)
+const galleryIndex = ref(0)
+
+function openGallery(index = 0) {
+  if (!props.product.images?.length) return
+  galleryIndex.value = index
+  galleryOpen.value = true
+}
+
+function nextImg() {
+  if (!props.product.images) return
+  galleryIndex.value = (galleryIndex.value + 1) % props.product.images.length
+}
+
+function prevImg() {
+  if (!props.product.images) return
+  galleryIndex.value =
+    (galleryIndex.value - 1 + props.product.images.length) %
+    props.product.images.length
+}
 
 function save() {
   if (props.product.quantity === null) {
@@ -44,9 +67,12 @@ function save() {
 <template>
   <div class="product-card">
 
-    <div class="image-wrapper">
-      <img v-if="product.image" :src="product.image" class="product-image" />
-      <div v-else class="image-placeholder">Sin imagen</div>
+    <div class="image-wrapper" @click="openGallery(0)">
+      <img :src="product.image" class="product-image" />
+
+      <div v-if="product.images && product.images.length > 1" class="multi-indicator">
+        {{ product.images.length }} imágenes
+      </div>
     </div>
 
     <div class="product-info">
@@ -105,11 +131,98 @@ function save() {
       </div>
     </div>
 
+    <div v-if="galleryOpen" class="gallery-modal" @click.self="galleryOpen = false">
+      <div class="gallery-content">
+        <img
+          :src="product.images?.[galleryIndex]?.image_url"
+          class="gallery-image"
+        />
+
+        <button v-if="(product.images?.length ?? 0) > 1" class="nav-btn left" @click.stop="prevImg">‹</button>
+        <button v-if="(product.images?.length ?? 0) > 1" class="nav-btn right" @click.stop="nextImg">›</button>
+
+        <button class="close-btn" @click="galleryOpen = false">✕</button>
+      </div>
+    </div>
+
   </div>
 </template>
 
 
 <style scoped>
+.gallery-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.gallery-content {
+  position: relative;
+  max-width: 90%;
+  max-height: 90%;
+}
+
+.gallery-image {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 12px;
+}
+
+.nav-btn {
+  position: absolute;
+  top: 50%;
+  padding: 0.5rem 0.9rem;
+  font-size: 2rem;
+  transform: translateY(-50%);
+  background: rgba(0,0,0,0.5);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  color: white;
+}
+
+.left { left: -55px; }
+.right { right: -55px; }
+
+.close-btn {
+  position: absolute;
+  top: -40px;
+  right: 0;
+  background: rgba(0,0,0,0.5);
+  border: none;
+  color: white;
+  font-size: 1.4rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.image-wrapper {
+  position: relative;
+  cursor: pointer;
+}
+
+.product-image {
+  width: 100%;
+  height: 170px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.multi-indicator {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  background: rgba(0,0,0,0.6);
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  border-radius: 6px;
+  border: 1px solid #555;
+}
 
 .product-card {
   background: var(--bg-card);

@@ -109,6 +109,7 @@ async function handleDeleteRecord(payload: { productId: number }) {
           name: p.name,
           price: p.price,
           image: p.images?.[0]?.image_url ?? '',
+          images: p.images ?? [],
           categories: p.categoryNames ?? [],
           quantity: recordMap[p.id]?.quantity ?? null,
           notes: recordMap[p.id]?.notes ?? ''
@@ -132,7 +133,7 @@ async function handleDeleteRecord(payload: { productId: number }) {
 .products-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 1.8rem; /* más aire entre tarjetas */
+  gap: 1.8rem;
   margin-top: 1.5rem;
 }
 
