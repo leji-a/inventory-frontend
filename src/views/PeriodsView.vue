@@ -3,10 +3,10 @@ import { ref, computed, onMounted } from "vue"
 import { useRouter } from "vue-router"
 import { useAuthStore } from "../stores/auth"
 import { usePeriodsStore } from "../stores/periods"
-
 import SearchBar from "../components/SearchBar.vue"
 import Pagination from "../components/Pagination.vue"
 import ErrorMessage from "../components/ErrorMessage.vue"
+import { formatDate } from "../utils/formatDate"
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -145,7 +145,7 @@ onMounted(async () => {
               <span v-if="p.id === periodStore.activePeriod?.id" class="badge">Activo</span>
             </h3>
 
-            <p><strong>Inicio:</strong> {{ p.start_date }}</p>
+            <p><strong>Inicio:</strong> {{ formatDate(p.start_date) }}</p>
             <p><strong>Notas:</strong> {{ p.notes || "N/A" }}</p>
           </div>
 

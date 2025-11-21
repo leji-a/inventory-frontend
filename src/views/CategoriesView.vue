@@ -5,6 +5,7 @@ import type { Category } from '../api/types'
 import ErrorMessage from '../components/ErrorMessage.vue'
 import SearchBar from '../components/SearchBar.vue'
 import Pagination from '../components/Pagination.vue'
+import { formatDate } from '../utils/formatDate'
 
 const categoriesStore = useCategoriesStore()
 
@@ -48,13 +49,6 @@ onMounted(async () => {
     console.error('Error loading categories:', error)
   }
 })
-
-// Formatear fechas
-const formatDate = (dateString?: string | null) => {
-  if (!dateString) return 'N/A'
-  const date = new Date(dateString)
-  return isNaN(date.getTime()) ? 'N/A' : date.toLocaleDateString('es-ES')
-}
 
 // Crear categoría
 const isSubmitDisabled = computed(() =>

@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { onMounted, computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-
 import { usePeriodsStore } from '../stores/periods'
 import { useRecordsStore } from '../stores/records'
 import { useProductsStore } from '../stores/products'
 import { useAuthStore } from '../stores/auth'
+import { formatDate } from '../utils/formatDate'
 
 const route = useRoute()
 const router = useRouter()
@@ -63,8 +63,8 @@ const enrichedProducts = computed(() => {
 
     <div v-if="period" class="period-card">
       <h2>{{ period.name }}</h2>
-      <p><strong>Fecha inicio:</strong> {{ period.start_date }}</p>
-      <p><strong>Fecha cierre:</strong> {{ period.end_date || '—' }}</p>
+      <p><strong>Fecha inicio:</strong> {{ formatDate(period.start_date) }}</p>
+      <p><strong>Fecha cierre:</strong> {{ formatDate(period.end_date || '—') }}</p>
       <p><strong>Notas:</strong> {{ period.notes || 'Sin notas' }}</p>
     </div>
 

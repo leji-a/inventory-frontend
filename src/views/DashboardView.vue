@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import { onMounted, computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-
 import { useAuthStore } from '../stores/auth'
 import { useProductsStore } from '../stores/products'
 import { usePeriodsStore } from '../stores/periods'
 import { useRecordsStore } from '../stores/records'
-
 import DashboardProducts from '../components/DashboardProducts.vue'
+import { formatDate } from '../utils/formatDate'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -68,7 +67,7 @@ function logout() {
     <div v-if="periodStore.activePeriod" class="active-period-card">
       <h2>{{ periodStore.activePeriod.name }}</h2>
       <p><strong>Notas:</strong> {{ periodStore.activePeriod.notes || 'N/A' }}</p>
-      <p><strong>Fecha inicio:</strong> {{ periodStore.activePeriod.start_date }}</p>
+      <p><strong>Fecha inicio:</strong> {{ formatDate(periodStore.activePeriod.start_date) }}</p>
       <div class="period-buttons">
         <button class="btn-primary" @click="$router.push('/categories')">
           Ir a Categorías
