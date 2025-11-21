@@ -223,7 +223,6 @@ onMounted(async () => {
         <h4>Imágenes del producto</h4>
 
         <ErrorMessage :message="store.imageError" />
-        <div v-if="successMessage" class="success-message">{{ successMessage }}</div>
 
         <ProductImagesManager
           :product-id="editingId!"
