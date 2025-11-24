@@ -116,13 +116,30 @@ function logout() {
   color: #eee;
 }
 
+/* ----- HEADER ----- */
 .dashboard-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
+/* Usuario */
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-email {
+  font-size: 0.95rem;
+  color: #aaa;
+  font-weight: 500;
+}
+
+/* Logout */
 .logout-btn {
   padding: 0.5rem 1rem;
   border-radius: 8px;
@@ -138,6 +155,7 @@ function logout() {
   opacity: 0.85;
 }
 
+/* ----- PERIOD CARD ----- */
 .active-period-card {
   background-color: #1b1b1b;
   border: 1px solid #2a2a2a;
@@ -153,21 +171,13 @@ function logout() {
   color: #646cff;
 }
 
-.active-period-card button {
-  display: block;
-  margin: 0;
-}
-
-.filter-box {
-  margin-bottom: 1.5rem;
-}
-
-select {
-  background: #1b1b1b;
-  color: #eee;
-  border: 1px solid #333;
-  padding: 0.5rem;
-  border-radius: 6px;
+/* Botones */
+.period-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
 }
 
 .btn-primary {
@@ -190,22 +200,81 @@ select {
   cursor: not-allowed;
 }
 
-.period-buttons {
-  display: flex;
-  justify-content: center;
-  gap: 0.5rem;
-  margin-top: 1rem;
+/* ----- FILTER BOX ----- */
+.filter-box {
+  margin-bottom: 1.5rem;
 }
 
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
+select {
+  background: #1b1b1b;
+  color: #eee;
+  border: 1px solid #333;
+  padding: 0.5rem;
+  border-radius: 6px;
 }
 
-.user-email {
-  font-size: 0.95rem;
-  color: #aaa;
-  font-weight: 500;
+/* ----------------------------- */
+/*         RESPONSIVE            */
+/* ----------------------------- */
+
+/* 📱 Móviles ≤ 768px */
+@media (max-width: 768px) {
+  .dashboard-wrapper {
+    padding: 0.5rem;
+    margin-top: 1rem;
+  }
+
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .user-info {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .active-period-card {
+    padding: 1rem;
+  }
+
+  .period-buttons {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .period-buttons button {
+    width: 100%;
+  }
+
+  .filter-box select {
+    width: 100%;
+    margin-top: 0.3rem;
+  }
 }
+
+/* 📱 Teléfonos pequeños ≤ 480px */
+@media (max-width: 480px) {
+  .dashboard-header h1 {
+    font-size: 1.6rem;
+  }
+
+  .user-email {
+    font-size: 0.85rem;
+  }
+
+  .logout-btn {
+    padding: 0.4rem 0.8rem;
+  }
+
+  .active-period-card h2 {
+    font-size: 1.3rem;
+  }
+
+  .btn-primary {
+    padding: 0.6rem 1.2rem;
+  }
+}
+
 </style>

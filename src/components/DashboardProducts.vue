@@ -127,12 +127,12 @@ async function handleDeleteRecord(payload: { productId: number }) {
 <style scoped>
 .products-container {
   margin-top: 1.5rem;
-  padding: 0 0.5rem;
+  padding: 0 1rem;
 }
 
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 1.8rem;
   margin-top: 1.5rem;
 }
