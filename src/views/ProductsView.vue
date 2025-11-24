@@ -148,25 +148,11 @@ const isSaveDisabled = computed(() =>
 
 const searchQuery = ref('')
 
-const currentPage = ref(1)
-const pageSize = ref(8)
-
-const totalPages = ref(1)
-const totalItems = ref(0)
-const hasNextPage = ref(false)
-const hasPrevPage = ref(false)
-
 async function loadProducts() {
-  await store.fetchAll(currentPage.value, pageSize.value)
-
-  totalPages.value = store.pagination.totalPages
-  totalItems.value = store.pagination.total
-  hasNextPage.value = store.pagination.hasNextPage
-  hasPrevPage.value = store.pagination.hasPrevPage
+  await store.fetchAll(store.pagination.page || 1, store.pagination.limit || 8) 
 }
 
 const goToPage = async (page: number) => {
-  currentPage.value = page
   await store.fetchAll(page, store.pagination.limit)
 }
 
@@ -188,8 +174,19 @@ const productsToShow = computed(() => {
   return store.items
 })
 
+const showPagination = computed(() => {
+  if (store.loading) return false
+
+  if (isSearching.value) return false
+
+  const p = store.pagination
+
+  if (!p || !Number.isFinite(p.totalPages)) return false
+
+  return p.totalPages > 1
+})
+
 watch(searchQuery, async () => {
-  currentPage.value = 1
   if (!isSearching.value) {
     await loadProducts()
   }
@@ -325,14 +322,17 @@ onMounted(async () => {
 
     </div>
 
-  </div>
+    <!-- PAGINACIÓN -->
+    <div v-if="showPagination" class="pagination-container">
       <Pagination
-        v-if="!isSearching && store.pagination.totalPages > 1"
         :currentPage="store.pagination.page"
         :totalPages="store.pagination.totalPages"
         :loading="store.loading"
         @change="goToPage"
       />
+    </div>
+
+  </div>
 </template>
 
 <style scoped>
@@ -445,38 +445,13 @@ onMounted(async () => {
   border-color: var(--accent);
 }
 
-.edit-section {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.edit-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--border-light);
-}
-
-.edit-header h3 {
-  margin: 0;
-  font-size: 1.2rem;
-}
-
-.basic-info-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  padding: 1rem;
-  background: var(--bg-input);
-  border-radius: 8px;
-}
-
 .images-section {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-light);
 }
 
 .images-section h4 {
@@ -634,6 +609,25 @@ onMounted(async () => {
   border: 1px solid var(--border-light);
 }
 
+.search-bar {
+  margin-bottom: 1.5rem;
+}
+
+.search-input {
+  width: 96%;
+  padding: 0.7rem 1rem;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-input);
+  color: var(--text-main);
+}
+
+.pagination-container {
+  margin-top: 2rem;
+  padding: 1rem 0;
+  border-top: 1px solid var(--border-light);
+}
+
 @media (max-width: 768px) {
   .products-view {
     padding: 1rem;
@@ -656,61 +650,5 @@ onMounted(async () => {
   .product-header {
     flex-direction: column;
   }
-}
-
-.search-bar {
-  margin-bottom: 1.5rem;
-}
-
-.search-input {
-  width: 96%;
-  padding: 0.7rem 1rem;
-  border-radius: 10px;
-  border: 1px solid var(--border-light);
-  background: var(--bg-input);
-  color: var(--text-main);
-}
-
-.pagination {
-  margin-top: 2rem;
-  display: flex;
-  gap: 0.4rem;
-  justify-content: center;
-  align-items: center;
-}
-
-.page-btn,
-.page-number {
-  padding: 0.5rem 0.9rem;
-  background: var(--bg-card);
-  border: 1px solid var(--border-light);
-  border-radius: 8px;
-  cursor: pointer;
-  transition: 0.2s;
-}
-
-.page-number.active {
-  background: var(--accent);
-  color: white;
-  border-color: var(--accent);
-}
-
-.page-btn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.page-btn:hover:not(:disabled),
-.page-number:hover:not(.active) {
-  background: var(--border-light);
-}
-
-.pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 1rem;
-  margin-top: 2rem;
-  padding: 1rem;
 }
 </style>

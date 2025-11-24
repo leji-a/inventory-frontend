@@ -40,13 +40,12 @@ export const useProductsStore = defineStore('products', {
   }),
 
   actions: {
-async fetchAll(page = 1, limit = 20) {
+async fetchAll(page = 1, limit = 8) {
       this.loading = true
       this.error = null
       const auth = useAuthStore()
       if (!auth.token) throw new Error("Not authenticated")
       const token = auth.token as string
-
 
       try {
         const res = await ProductAPI.list(token, page, limit)
