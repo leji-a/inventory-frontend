@@ -253,4 +253,25 @@ function save() {
 .nav-btn.left { left: -50px; }
 .nav-btn.right { right: -50px; }
 .close-btn { position: absolute; top: -40px; right: -40px; background: rgba(30,30,30,0.6); border: 1px solid #555; padding: 0.4rem 0.7rem; border-radius: 6px; color: #ddd; font-size: 1.6rem; cursor: pointer; }
+
+@media (max-width: 639px) {
+  .nav-btn.left {
+    left: 10px; /* dentro de la pantalla */
+    font-size: 1.5rem; /* más pequeño para no tapar la imagen */
+    padding: 0.3rem 0.5rem;
+  }
+
+  .nav-btn.right {
+    right: 10px;
+    font-size: 1.5rem;
+    padding: 0.3rem 0.5rem;
+  }
+
+  .close-btn {
+    top: 10px;
+    right: 10px;
+    font-size: 1.3rem;
+    padding: 0.3rem 0.5rem;
+  }
+}
 </style>
