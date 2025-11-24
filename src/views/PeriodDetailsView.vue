@@ -53,6 +53,52 @@ const enrichedProducts = computed(() => {
     })
     .filter(p => p.quantity > 0)
 })
+
+const exporting = ref(false)
+
+async function exportPeriod() {
+  if (!period.value) return
+
+  exporting.value = true
+
+  try {
+    const isActive = period.value.status === 'active'
+
+    const endpoint = isActive
+      ? '/inventory/export/current'
+      : `/inventory/export/period/${period.value.id}`
+
+    const res = await fetch(import.meta.env.VITE_API_URL + endpoint, {
+      headers: {
+        Authorization: `Bearer ${auth.token}`
+      }
+    })
+
+    if (!res.ok) {
+      throw new Error('Error al exportar CSV')
+    }
+
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+
+    const a = document.createElement('a')
+    a.href = url
+
+    const name = isActive
+      ? `inventario_actual.csv`
+      : `inventario_${period.value.name.replace(/\s+/g, '_')}.csv`
+
+    a.download = name
+    a.click()
+
+    URL.revokeObjectURL(url)
+  } catch (err) {
+    alert('No se pudo exportar el período.')
+  } finally {
+    exporting.value = false
+  }
+}
+
 </script>
 
 <template>
@@ -67,6 +113,16 @@ const enrichedProducts = computed(() => {
       <p><strong>Fecha cierre:</strong> {{ formatDate(period.end_date || '—') }}</p>
       <p><strong>Notas:</strong> {{ period.notes || 'Sin notas' }}</p>
     </div>
+
+    <div class="export-buttons" style="margin: 1rem 0;">
+  <button 
+    class="btn-secondary"
+    :disabled="exporting"
+    @click="exportPeriod"
+  >
+    {{ exporting ? 'Exportando...' : 'Exportar este período' }}
+  </button>
+</div>
 
     <h2>Productos registrados</h2>
 
