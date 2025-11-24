@@ -61,7 +61,10 @@ function logout() {
     <div class="dashboard-header">
 
       <h1>Dashboard</h1>
-      <button class="logout-btn" @click="logout">Logout</button>
+      <div class="user-info">
+       <span class="user-email">{{ auth.user?.email }}</span>
+       <button class="logout-btn" @click="logout">Logout</button>
+      </div>
     </div>
 
     <div v-if="periodStore.activePeriod" class="active-period-card">
@@ -192,5 +195,17 @@ select {
   justify-content: center;
   gap: 0.5rem;
   margin-top: 1rem;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-email {
+  font-size: 0.95rem;
+  color: #aaa;
+  font-weight: 500;
 }
 </style>
