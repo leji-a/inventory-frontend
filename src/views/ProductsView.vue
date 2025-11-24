@@ -55,6 +55,11 @@ function startEdit(product: any) {
   showCreateForm.value = false
 }
 
+function cancelEdit() {
+  editingId.value = null
+  resetForm()
+}
+
 async function saveBasicInfo() {
   if (!form.name.trim()) {
     store.error = 'El nombre es obligatorio'
@@ -247,6 +252,16 @@ onMounted(async () => {
             {{ saving ? 'Guardando...' : editingId === null ? 'Crear Producto' : 'Guardar cambios' }}
           </button>
         </div>
+
+        <button
+    v-if="editingId !== null"
+    class="btn-danger"
+    type="button"
+    @click="cancelEdit"
+    :disabled="saving"
+  >
+    Cerrar formulario de Edición
+  </button>
 
         <p class="info-text" v-if="editingId === null">
           💡 Después de crear el producto podrás agregar imágenes
