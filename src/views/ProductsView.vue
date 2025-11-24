@@ -1,32 +1,29 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useProductsStore } from '../stores/products'
 import { useCategoriesStore } from '../stores/categories'
 import ProductImagesManager from '../components/ProductImagesManager.vue'
 import ErrorMessage from '../components/ErrorMessage.vue'
 import CategoriesSelector from '../components/CategoriesSelector.vue'
+import Pagination from '../components/Pagination.vue'
 
 const router = useRouter()
 const store = useProductsStore()
 const categoriesStore = useCategoriesStore()
 
-// UI states
 const showCreateForm = ref(false)
 const saving = ref(false)
 const successMessage = ref('')
 
-// Para edición
 const editingId = ref<number | null>(null)
 
-// Formulario reactivo
 const form = reactive({
   name: '',
   price: 0,
   categoryIds: [] as number[]
 })
 
-// --- Funciones ---
 function resetForm() {
   form.name = ''
   form.price = 0
@@ -58,11 +55,6 @@ function startEdit(product: any) {
   showCreateForm.value = false
 }
 
-  //function cancelEdit() {
-  //  editingId.value = null
-  //  resetForm()
-  //}
-
 async function saveBasicInfo() {
   if (!form.name.trim()) {
     store.error = 'El nombre es obligatorio'
@@ -80,7 +72,6 @@ async function saveBasicInfo() {
 
   try {
     if (editingId.value === null) {
-      // Crear producto
       const created = await store.addProduct({
         name: form.name,
         price: form.price,
@@ -92,7 +83,6 @@ async function saveBasicInfo() {
       showCreateForm.value = false
 
     } else {
-      // Actualizar producto
       await store.updateProduct(editingId.value, {
         name: form.name,
         price: form.price,
@@ -103,7 +93,7 @@ async function saveBasicInfo() {
       setTimeout(() => { successMessage.value = '' }, 2000)
     }
 
-    await store.fetchAll()
+    await loadProducts()
   } catch (err: any) {
     console.error('Error guardando producto:', err)
     store.error = err.message || 'Error al guardar el producto'
@@ -146,6 +136,7 @@ const handleDeleteProduct = async (id: number, name: string) => {
   if (!confirm(`¿Eliminar el producto "${name}"?`)) return
   try {
     await store.removeProduct(id)
+    await loadProducts()
   } catch (err: any) {
     alert(err.message || 'Error al eliminar el producto')
   }
@@ -155,9 +146,57 @@ const isSaveDisabled = computed(() =>
   saving.value || store.uploadingImage || !form.name.trim()
 )
 
-// --- Montaje ---
+const searchQuery = ref('')
+
+const currentPage = ref(1)
+const pageSize = ref(8)
+
+const totalPages = ref(1)
+const totalItems = ref(0)
+const hasNextPage = ref(false)
+const hasPrevPage = ref(false)
+
+async function loadProducts() {
+  await store.fetchAll(currentPage.value, pageSize.value)
+
+  totalPages.value = store.pagination.totalPages
+  totalItems.value = store.pagination.total
+  hasNextPage.value = store.pagination.hasNextPage
+  hasPrevPage.value = store.pagination.hasPrevPage
+}
+
+const goToPage = async (page: number) => {
+  currentPage.value = page
+  await store.fetchAll(page, store.pagination.limit)
+}
+
+const filteredProducts = computed(() => {
+  const q = searchQuery.value.toLowerCase().trim()
+  if (!q) return store.items
+
+  return store.items.filter(p =>
+    p.name.toLowerCase().includes(q)
+  )
+})
+
+const isSearching = computed(() => searchQuery.value.trim().length > 0)
+
+const productsToShow = computed(() => {
+  if (isSearching.value) {
+    return filteredProducts.value
+  }
+  return store.items
+})
+
+watch(searchQuery, async () => {
+  currentPage.value = 1
+  if (!isSearching.value) {
+    await loadProducts()
+  }
+})
+
 onMounted(async () => {
-  await store.fetchAll()
+  await loadProducts()
   if (categoriesStore.items.length === 0) {
     await categoriesStore.fetchAll()
   }
@@ -167,7 +206,6 @@ onMounted(async () => {
 <template>
   <div class="products-view">
 
-    <!-- Header -->
     <div class="header">
       <button class="btn-secondary" @click="router.push('/')">⬅ Volver al Dashboard</button>
       <h1>Gestión de Productos</h1>
@@ -180,7 +218,7 @@ onMounted(async () => {
       </button>
     </div>
 
-    <!-- Formulario de creación / edición -->
+    <!-- FORMULARIO -->
     <div v-if="showCreateForm || editingId !== null" class="create-form">
       <h2>{{ editingId === null ? 'Nuevo Producto' : 'Editar Producto' }}</h2>
 
@@ -218,7 +256,6 @@ onMounted(async () => {
         </p>
       </form>
 
-      <!-- Gestor de imágenes solo si estamos editando -->
       <div v-if="editingId !== null" class="images-section">
         <h4>Imágenes del producto</h4>
 
@@ -235,12 +272,23 @@ onMounted(async () => {
       </div>
     </div>
 
-    <!-- Lista de productos -->
+    <!-- LISTA DE PRODUCTOS -->
     <div class="products-list">
+
+      <div class="search-bar">
+        <input
+          v-model="searchQuery"
+          type="text"
+          placeholder="Buscar productos..."
+          class="input search-input"
+        />
+      </div>
+
       <div v-if="store.loading" class="loading">Cargando productos...</div>
       <div v-else-if="store.items.length === 0" class="empty-state">No hay productos disponibles</div>
+
       <div v-else class="products-grid">
-        <div v-for="product in store.items" :key="product.id" class="product-card">
+        <div v-for="product in productsToShow" :key="product.id" class="product-card">
           <div class="product-view">
             <div class="product-info">
               <div class="product-header">
@@ -248,26 +296,43 @@ onMounted(async () => {
                   <h3>{{ product.name }}</h3>
                   <p class="product-price">${{ product.price.toFixed(2) }}</p>
                 </div>
+
                 <div v-if="product.images?.length" class="images-preview">
-                  <img v-for="img in product.images.slice(0, 3)" :key="img.id" :src="img.image_url" class="product-thumbnail" :alt="`${product.name} - imagen ${img.display_order + 1}`"/>
-                  <span v-if="product.images.length > 3" class="more-images">+{{ product.images.length - 3 }}</span>
+                  <img
+                    v-for="img in product.images.slice(0, 2)"
+                    :key="img.id"
+                    :src="img.image_url"
+                    class="product-thumbnail"
+                  />
+                  <span v-if="product.images.length > 2" class="more-images">+{{ product.images.length - 2 }}</span>
                 </div>
+
                 <p v-else class="no-images">Sin imágenes</p>
               </div>
+
               <div v-if="product.categoryNames?.length" class="product-categories">
                 <span v-for="cat in product.categoryNames" :key="cat" class="category-badge">{{ cat }}</span>
               </div>
             </div>
+
             <div class="product-actions">
-              <button class="btn-secondary" @click="startEdit(product)" :disabled="store.loading || saving || store.uploadingImage">Editar</button>
-              <button class="btn-danger" @click="handleDeleteProduct(product.id, product.name)" :disabled="store.loading || saving || store.uploadingImage">Eliminar</button>
+              <button class="btn-secondary" @click="startEdit(product)">Editar</button>
+              <button class="btn-danger" @click="handleDeleteProduct(product.id, product.name)">Eliminar</button>
             </div>
           </div>
         </div>
       </div>
+
     </div>
 
   </div>
+      <Pagination
+        v-if="!isSearching && store.pagination.totalPages > 1"
+        :currentPage="store.pagination.page"
+        :totalPages="store.pagination.totalPages"
+        :loading="store.loading"
+        @change="goToPage"
+      />
 </template>
 
 <style scoped>
@@ -591,5 +656,61 @@ onMounted(async () => {
   .product-header {
     flex-direction: column;
   }
+}
+
+.search-bar {
+  margin-bottom: 1.5rem;
+}
+
+.search-input {
+  width: 96%;
+  padding: 0.7rem 1rem;
+  border-radius: 10px;
+  border: 1px solid var(--border-light);
+  background: var(--bg-input);
+  color: var(--text-main);
+}
+
+.pagination {
+  margin-top: 2rem;
+  display: flex;
+  gap: 0.4rem;
+  justify-content: center;
+  align-items: center;
+}
+
+.page-btn,
+.page-number {
+  padding: 0.5rem 0.9rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.page-number.active {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+.page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.page-btn:hover:not(:disabled),
+.page-number:hover:not(.active) {
+  background: var(--border-light);
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding: 1rem;
 }
 </style>

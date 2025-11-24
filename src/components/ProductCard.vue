@@ -131,7 +131,9 @@ function save() {
       </div>
     </div>
 
-    <div v-if="galleryOpen" class="gallery-modal" @click.self="galleryOpen = false">
+  </div>
+
+  <div v-if="galleryOpen" class="gallery-modal" @click.self="galleryOpen = false">
       <div class="gallery-content">
         <img
           :src="product.images?.[galleryIndex]?.image_url"
@@ -143,9 +145,8 @@ function save() {
 
         <button class="close-btn" @click="galleryOpen = false">✕</button>
       </div>
-    </div>
-
   </div>
+
 </template>
 
 
@@ -153,51 +154,57 @@ function save() {
 .gallery-modal {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.7);
+  background: rgba(0,0,0,0.85);
+  z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 50;
 }
 
 .gallery-content {
   position: relative;
-  max-width: 90%;
-  max-height: 90%;
+  max-width: 95vw;
+  max-height: 95vh;
 }
 
 .gallery-image {
-  max-width: 100%;
-  max-height: 100%;
-  border-radius: 12px;
+  max-width: 95vw;
+  max-height: 95vh;
+  border-radius: 10px;
+  object-fit: contain;
 }
 
 .nav-btn {
   position: absolute;
   top: 50%;
-  padding: 0.5rem 0.9rem;
-  font-size: 2rem;
   transform: translateY(-50%);
-  background: rgba(0,0,0,0.5);
-  border: none;
-  border-radius: 8px;
+  background: rgba(30,30,30,0.6);
+  border: 1px solid #555;
+  padding: 0.5rem 0.7rem;
+  border-radius: 6px;
+  color: #ddd;
   cursor: pointer;
-  color: white;
+  font-size: 2rem;
 }
 
-.left { left: -55px; }
-.right { right: -55px; }
+.nav-btn.left {
+  left: -60px;
+}
+
+.nav-btn.right {
+  right: -60px;
+}
 
 .close-btn {
   position: absolute;
-  top: -40px;
-  right: 0;
-  background: rgba(0,0,0,0.5);
-  border: none;
-  color: white;
-  font-size: 1.4rem;
-  padding: 0.4rem 0.6rem;
+  top: -50px;
+  right: -50px;
+  background: rgba(30,30,30,0.6);
+  border: 1px solid #555;
+  padding: 0.4rem 0.7rem;
   border-radius: 6px;
+  color: #ddd;
+  font-size: 1.6rem;
   cursor: pointer;
 }
 

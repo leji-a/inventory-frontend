@@ -23,7 +23,7 @@ const goToNext = () => {
 </script>
 
 <template>
-  <div class="pagination">
+  <div class="pagination-wrapper">
     <button
       class="btn-secondary"
       @click="goToPrev"
@@ -47,7 +47,7 @@ const goToNext = () => {
 </template>
 
 <style scoped>
-.pagination {
+.pagination-wrapper {
   display: flex;
   justify-content: center;
   align-items: center;

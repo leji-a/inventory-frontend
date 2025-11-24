@@ -4,13 +4,20 @@ import { ProductAPI } from '../api/endpoints/products'
 import type { Product } from '../api/types'
 import { useAuthStore } from './auth'
 
+interface Pagination {
+  page: number
+  totalPages: number
+  total: number
+  hasNextPage: boolean
+  hasPrevPage: boolean
+  limit: number
+}
+
 interface ProductsState {
   items: Product[]
   loading: boolean
   error: string | null
-  currentPage: number
-  totalPages: number
-  limit: number
+  pagination: Pagination
   uploadingImage: boolean
   imageError: string | null
 }
@@ -20,33 +27,43 @@ export const useProductsStore = defineStore('products', {
     items: [],
     loading: false,
     error: null,
-    currentPage: 1,
-    totalPages: 1,
-    limit: 20,
+    pagination: {
+      page: 1,
+      totalPages: 1,
+      total: 0,
+      hasNextPage: false,
+      hasPrevPage: false,
+      limit: 20
+    },
     uploadingImage: false,
     imageError: null,
   }),
 
   actions: {
-    async fetchAll(page = 1, limit = 20) {
-      const auth = useAuthStore()
-      if (!auth.token) throw new Error('Not authenticated')
-
+async fetchAll(page = 1, limit = 20) {
       this.loading = true
       this.error = null
+      const auth = useAuthStore()
+      if (!auth.token) throw new Error("Not authenticated")
+      const token = auth.token as string
+
 
       try {
-        const res = await ProductAPI.list(auth.token, page, limit)
-        this.items = res.data.map((p: Product) => ({
-          ...p,
-          categoryIds: p.categoryIds ?? [],
-          images: p.images ?? []
-        }))
-        this.currentPage = page
-        this.totalPages = res.pagination.totalPages ?? 1
-        this.limit = limit
+        const res = await ProductAPI.list(token, page, limit)
+
+        const backendPagination = res.pagination || {}
+
+        this.items = res.data
+        this.pagination = {
+          page: backendPagination.page ?? page,
+          limit: backendPagination.limit ?? limit,
+          totalPages: backendPagination.totalPages ?? 1,
+          total: backendPagination.total ?? 0,
+          hasNextPage: backendPagination.hasNextPage ?? false,
+          hasPrevPage: backendPagination.hasPrevPage ?? false,
+        }
       } catch (err: any) {
-        this.error = err.message ?? 'Error al cargar productos'
+        this.error = err.message || 'Error loading products'
       } finally {
         this.loading = false
       }

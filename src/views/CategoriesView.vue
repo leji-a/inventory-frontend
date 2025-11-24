@@ -124,9 +124,9 @@ const saveEdit = async () => {
   <div class="categories-view">
 
     <div class="header">
-     <button class="btn-secondary" @click="$router.push('/')">
-  ⬅ Volver al Dashboard
-</button>
+      <button class="btn-secondary" @click="$router.push('/')">
+        ⬅ Volver al Dashboard
+      </button>
       <h1>Gestión de Categorías</h1>
 
       <SearchBar

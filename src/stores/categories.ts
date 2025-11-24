@@ -29,7 +29,6 @@ export const useCategoriesStore = defineStore('categories', {
   persist: true,
 
   getters: {
-    // Calculamos totalPages desde pagination sin usar "this"
     totalPages: (state) =>
       state.pagination
         ? Math.ceil(state.pagination.total / state.pagination.limit)
