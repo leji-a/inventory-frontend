@@ -2,19 +2,24 @@
 import { onMounted, computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-import { useProductsStore } from '../stores/products'
 import { usePeriodsStore } from '../stores/periods'
 import { useRecordsStore } from '../stores/records'
 import DashboardProducts from '../components/DashboardProducts.vue'
 import { formatDate } from '../utils/formatDate'
+import { ProductAPI } from '../api/endpoints/products'
+import type { Product } from '../api/types'
 
 const router = useRouter()
 const auth = useAuthStore()
-const productStore = useProductsStore()
 const periodStore = usePeriodsStore()
 const recordsStore = useRecordsStore()
 
 const filterMode = ref<'all' | 'included' | 'excluded'>('all')
+
+// Estado local para el Dashboard - NO usa el store
+const dashboardProducts = ref<Product[]>([])
+const loading = ref(false)
+const error = ref('')
 
 onMounted(async () => {
   if (!auth.token) {
@@ -22,20 +27,29 @@ onMounted(async () => {
     return
   }
 
-  if (!productStore.items.length) await productStore.fetchAll()
-  if (!periodStore.activePeriod) await periodStore.fetchActive()
+  loading.value = true
+  error.value = ''
+  
+  try {
+    const response = await ProductAPI.list(auth.token, 1, 100)
+    dashboardProducts.value = response.data
+  } catch (err: any) {
+    console.error('Error cargando productos para Dashboard:', err)
+    error.value = 'Error al cargar productos'
+  } finally {
+    loading.value = false
+  }
+  
+  if (!periodStore.activePeriod) {
+    await periodStore.fetchActive()
+  }
 
   if (periodStore.activePeriod) {
     await recordsStore.fetchByPeriod(periodStore.activePeriod.id)
   }
 })
 
-const products = computed(() => productStore.items ?? [])
-// const activeRecords = computed(() => {
-//   const p = periodStore.activePeriod
-//   if (!p) return []
-//   return recordsStore.byPeriod[p.id] ?? []
-// })
+const products = computed(() => dashboardProducts.value)
 
 const boundRecords = computed({
   get() {
@@ -59,13 +73,18 @@ function logout() {
 <template>
   <div class="dashboard-wrapper">
     <div class="dashboard-header">
-
       <h1>Dashboard</h1>
       <div class="user-info">
        <span class="user-email">{{ auth.user?.email }}</span>
        <button class="logout-btn" @click="logout">Logout</button>
       </div>
     </div>
+
+    <div v-if="error" class="error-message">
+      {{ error }}
+    </div>
+
+    <!-- Loading state -->
 
     <div v-if="periodStore.activePeriod" class="active-period-card">
       <h2>{{ periodStore.activePeriod.name }}</h2>
@@ -90,6 +109,7 @@ function logout() {
           Crear un periodo
       </button>
     </div>
+
     <div class="filter-box">
       <label>Filtrar:</label>
       <select v-model="filterMode">
@@ -99,7 +119,12 @@ function logout() {
       </select>
     </div>
 
+    <div v-if="loading" class="loading-message">
+      Cargando productos...
+    </div>
+    
     <DashboardProducts
+      v-if="!loading"
       :products="products"
       v-model:records="boundRecords"
       :period="periodStore.activePeriod"
@@ -153,6 +178,23 @@ function logout() {
 
 .logout-btn:hover {
   opacity: 0.85;
+}
+
+/* ----- MESSAGES ----- */
+.error-message {
+  background: rgba(220, 38, 38, 0.15);
+  border-left: 3px solid #dc2626;
+  color: #fca5a5;
+  padding: 0.7rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+.loading-message {
+  text-align: center;
+  padding: 2rem;
+  color: #aaa;
+  font-size: 1rem;
 }
 
 /* ----- PERIOD CARD ----- */
@@ -276,5 +318,4 @@ select {
     padding: 0.6rem 1.2rem;
   }
 }
-
 </style>
