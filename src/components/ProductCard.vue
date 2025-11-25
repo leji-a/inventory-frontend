@@ -42,8 +42,7 @@ function nextImg() {
 function prevImg() {
   if (!props.product.images) return
   galleryIndex.value =
-    (galleryIndex.value - 1 + props.product.images.length) %
-    props.product.images.length
+    (galleryIndex.value - 1 + props.product.images.length) % props.product.images.length
 }
 
 function save() {
@@ -60,22 +59,23 @@ function save() {
       notes: notes.value
     })
   }
+
   editing.value = false
 }
 </script>
 
 <template>
   <div class="product-card">
-
     <!-- Imagen -->
     <div class="image-wrapper" @click="openGallery(0)">
       <img :src="product.image" class="product-image" />
+
       <div v-if="product.images && product.images.length > 1" class="multi-indicator">
         {{ product.images.length }} imágenes
       </div>
     </div>
 
-    <!-- Info + botones -->
+    <!-- Info + acciones -->
     <div class="info-actions">
       <div class="product-info">
         <h3 class="product-name">{{ product.name }}</h3>
@@ -95,17 +95,25 @@ function save() {
         <button class="btn" @click="editing = true">
           {{ product.quantity === null ? "Agregar" : "Editar" }}
         </button>
-        <button v-if="product.quantity !== null" class="btn btn-danger"
-          @click="emit('delete-record', { productId: product.id })">
+
+        <button
+          v-if="product.quantity !== null"
+          class="btn btn-danger"
+          @click="emit('delete-record', { productId: product.id })"
+        >
           Eliminar
         </button>
       </div>
     </div>
+  </div>
 
-    <!-- Modal editar/agregar -->
+  <!-- Modal editar/agregar -->
+  <teleport to="body">
     <div v-if="editing" class="modal">
       <div class="modal-content">
-        <h4 class="modal-title">{{ product.quantity === null ? "Agregar al período" : "Editar registro" }}</h4>
+        <h4 class="modal-title">
+          {{ product.quantity === null ? "Agregar al período" : "Editar registro" }}
+        </h4>
 
         <label class="label">Cantidad</label>
         <input type="number" v-model.number="quantity" min="1" class="input" />
@@ -119,18 +127,34 @@ function save() {
         </div>
       </div>
     </div>
+  </teleport>
 
-    <!-- Modal galería -->
+  <!-- Modal galería -->
+  <teleport to="body">
     <div v-if="galleryOpen" class="gallery-modal" @click.self="galleryOpen = false">
       <div class="gallery-content">
         <img :src="product.images?.[galleryIndex]?.image_url" class="gallery-image" />
-        <button v-if="(product.images?.length ?? 0) > 1" class="nav-btn left" @click.stop="prevImg">‹</button>
-        <button v-if="(product.images?.length ?? 0) > 1" class="nav-btn right" @click.stop="nextImg">›</button>
+
+        <button
+          v-if="(product.images?.length ?? 0) > 1"
+          class="nav-btn left"
+          @click.stop="prevImg"
+        >
+          ‹
+        </button>
+
+        <button
+          v-if="(product.images?.length ?? 0) > 1"
+          class="nav-btn right"
+          @click.stop="nextImg"
+        >
+          ›
+        </button>
+
         <button class="close-btn" @click="galleryOpen = false">✕</button>
       </div>
     </div>
-
-  </div>
+  </teleport>
 </template>
 
 <style scoped>
@@ -234,13 +258,27 @@ function save() {
 .btn-danger { background: #dc2626; }
 .btn-secondary { background: #6b7280; }
 
+.modal, .modal-content {
+  all: unset;
+  display: block;
+}
+
 /* Modal */
-.modal { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; backdrop-filter: blur(1px); }
-.modal-content { width: 90%; max-width: 360px; background: var(--bg-card); padding: 1.3rem; border-radius: 14px; display: flex; flex-direction: column; animation: pop 0.15s ease; }
+.modal { grid-area: unset !important; z-index: 9998; position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; backdrop-filter: blur(1px); }
+.modal-content { z-index: 9999; box-sizing: border-box; width: 90%; max-width: 360px; background: var(--bg-card); padding: 1.3rem; border-radius: 14px; display: flex; flex-direction: column; animation: pop 0.15s ease; }
+.modal-content input,
+.modal-content textarea {
+  width: 100%;
+}
 .modal-title { font-size: 1.15rem; margin-bottom: 0.7rem; }
 .label { margin-top: 0.5rem; font-weight: 500; }
 .input { padding: 0.45rem 0.6rem; width: 100%; border-radius: 8px; border: 1px solid var(--border-light); margin-top: 0.2rem; }
-.textarea { height: 80px; resize: none; }
+.textarea {
+  height: 80px;
+  resize: vertical;
+  max-height: 200px;
+}
+
 .modal-actions { display: flex; gap: 0.6rem; margin-top: 1rem; flex-wrap: wrap; }
 
 @keyframes pop { from { transform: scale(0.93); opacity: 0; } to { transform: scale(1); opacity: 1; } }
