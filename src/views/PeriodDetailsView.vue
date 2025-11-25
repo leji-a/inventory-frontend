@@ -46,9 +46,11 @@ const enrichedProducts = computed(() => {
   return productsStore.items
     .map(p => {
       const record = periodRecords.value.find(r => r.product_id === p.id)
+       const quantity = record?.quantity ?? 0
       return {
         ...p,
-        quantity: record?.quantity ?? 0
+        quantity,
+        total: quantity * p.price
       }
     })
     .filter(p => p.quantity > 0)
@@ -133,6 +135,7 @@ async function exportPeriod() {
             <th>Producto</th>
             <th>Categoría</th>
             <th>Cantidad</th>
+            <th>Total</th>
           </tr>
         </thead>
 
@@ -141,6 +144,7 @@ async function exportPeriod() {
             <td>{{ p.name }}</td>
             <td>{{ p.categoryNames?.join(', ') || 'Sin categoría' }}</td>
             <td class="qty">{{ p.quantity }}</td>
+            <td class="qty">{{ p.total.toFixed(2) }}</td>
           </tr>
         </tbody>
       </table>
