@@ -104,9 +104,9 @@ function logout() {
     </div>
 
     <div v-if="!periodStore.activePeriod" class="active-period-card">
-      <h2>No hay un periodo activo</h2>  
+      <h2>No hay un periodo activo</h2> <br>  
       <button class="btn-primary" @click="$router.push('/periods')">
-          Crear un periodo
+          Ir a Periodos
       </button>
     </div>
 
