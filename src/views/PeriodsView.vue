@@ -7,12 +7,15 @@ import SearchBar from "../components/SearchBar.vue"
 import Pagination from "../components/Pagination.vue"
 import ErrorMessage from "../components/ErrorMessage.vue"
 import { formatDate } from "../utils/formatDate"
+import { getErrorMessage } from "../utils/translateError"
 
 const router = useRouter()
 const auth = useAuthStore()
 const periodStore = usePeriodsStore()
 
 const searchQuery = ref("")
+const error = ref("")
+const loading = ref(false)
 
 const filteredPeriods = computed(() => {
   const q = searchQuery.value.trim().toLowerCase()
@@ -50,28 +53,44 @@ const newPeriod = ref({
 
 async function createPeriod() {
   if (!newPeriod.value.name.trim()) {
-    alert("El nombre es obligatorio")
+    error.value = "El nombre es obligatorio"
     return
   }
 
-  await periodStore.create({
-    name: newPeriod.value.name,
-    start_date: newPeriod.value.start_date,
-    notes: newPeriod.value.notes
-  })
+  loading.value = true
+  error.value = ""
 
-  newPeriod.value.name = ""
-  newPeriod.value.notes = ""
+  try {
+    await periodStore.create({
+      name: newPeriod.value.name,
+      start_date: newPeriod.value.start_date,
+      notes: newPeriod.value.notes
+    })
 
-  await periodStore.fetchAll()
-  showCreateForm.value = false
+    newPeriod.value.name = ""
+    newPeriod.value.notes = ""
+
+    await periodStore.fetchAll()
+    showCreateForm.value = false
+  } catch (err: any) {
+    error.value = getErrorMessage(err)
+  } finally {
+    loading.value = false
+  }
 }
 
 async function closePeriod(id: number) {
   if (!confirm("¿Cerrar este período?")) return
-  await periodStore.close(id)
-  await periodStore.fetchAll()
-  await periodStore.fetchActive()
+  
+  error.value = ""
+  
+  try {
+    await periodStore.close(id)
+    await periodStore.fetchAll()
+    await periodStore.fetchActive()
+  } catch (err: any) {
+    error.value = getErrorMessage(err)
+  }
 }
 
 onMounted(async () => {
@@ -80,8 +99,17 @@ onMounted(async () => {
     return
   }
 
-  await periodStore.fetchAll()
-  await periodStore.fetchActive()
+  loading.value = true
+  error.value = ""
+
+  try {
+    await periodStore.fetchAll()
+    await periodStore.fetchActive()
+  } catch (err: any) {
+    error.value = getErrorMessage(err)
+  } finally {
+    loading.value = false
+  }
 })
 </script>
 
@@ -95,10 +123,17 @@ onMounted(async () => {
 
       <SearchBar v-model="searchQuery" placeholder="Buscar períodos..." />
 
-      <button class="btn-primary" @click="showCreateForm = !showCreateForm">
+      <button 
+        class="btn-primary" 
+        @click="showCreateForm = !showCreateForm"
+        :disabled="loading"
+      >
         {{ showCreateForm ? "Cancelar" : "+ Nuevo Período" }}
       </button>
     </div>
+
+    <!-- Mensaje de error general -->
+    <ErrorMessage :message="error" />
 
     <div v-if="showCreateForm" class="create-form">
       <h2>Nuevo Período</h2>
@@ -106,29 +141,51 @@ onMounted(async () => {
       <div class="form">
         <div class="field">
           <label>Nombre *</label>
-          <input v-model="newPeriod.name" class="input" />
+          <input 
+            v-model="newPeriod.name" 
+            class="input" 
+            :disabled="loading"
+          />
         </div>
 
         <div class="field">
           <label>Fecha de inicio</label>
-          <input v-model="newPeriod.start_date" type="date" class="input" />
+          <input 
+            v-model="newPeriod.start_date" 
+            type="date" 
+            class="input" 
+            :disabled="loading"
+          />
         </div>
 
         <div class="field">
           <label>Notas</label>
-          <textarea v-model="newPeriod.notes" rows="3" class="textarea"></textarea>
+          <textarea 
+            v-model="newPeriod.notes" 
+            rows="3" 
+            class="textarea"
+            :disabled="loading"
+          ></textarea>
         </div>
 
         <div class="form-actions">
-          <button class="btn-primary" @click="createPeriod">Crear</button>
+          <button 
+            class="btn-primary" 
+            @click="createPeriod"
+            :disabled="loading || !newPeriod.name.trim()"
+          >
+            {{ loading ? "Creando..." : "Crear" }}
+          </button>
         </div>
       </div>
     </div>
 
     <div class="periods-list">
-      <ErrorMessage :message="periodStore.error" />
+      <div v-if="loading && periodStore.allPeriods.length === 0" class="loading-state">
+        Cargando períodos...
+      </div>
 
-      <div v-if="paginatedPeriods.length === 0" class="empty-state">
+      <div v-else-if="paginatedPeriods.length === 0" class="empty-state">
         <p>No hay períodos para mostrar</p>
       </div>
 
@@ -154,16 +211,24 @@ onMounted(async () => {
               class="btn-danger"
               @click="closePeriod(p.id)"
               v-if="p.id === periodStore.activePeriod?.id"
+              :disabled="loading"
             >
               Cerrar período
             </button>
-            <button class="btn-primary" @click="$router.push(`/periods/${p.id}`)">Ver detalles</button>
+            <button 
+              class="btn-primary" 
+              @click="$router.push(`/periods/${p.id}`)"
+              :disabled="loading"
+            >
+              Ver detalles
+            </button>
           </div>
         </div>
       </div>
     </div>
 
     <Pagination
+      v-if="!loading && paginatedPeriods.length > 0"
       :currentPage="currentPage"
       :totalPages="totalPages"
       @change="changePage"
@@ -213,6 +278,12 @@ onMounted(async () => {
   border: 1px solid var(--border-light);
   border-radius: 8px;
   color: var(--text-main);
+}
+
+.input:disabled,
+.textarea:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .form-actions {
@@ -309,5 +380,15 @@ onMounted(async () => {
 .btn-danger:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.loading-state,
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  color: var(--text-dim);
+  background: var(--bg-card);
+  border-radius: 12px;
+  border: 1px solid var(--border-light);
 }
 </style>

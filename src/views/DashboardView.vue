@@ -6,6 +6,7 @@ import { usePeriodsStore } from '../stores/periods'
 import { useRecordsStore } from '../stores/records'
 import DashboardProducts from '../components/DashboardProducts.vue'
 import { formatDate } from '../utils/formatDate'
+import { getErrorMessage } from '../utils/translateError'
 import { ProductAPI } from '../api/endpoints/products'
 import type { Product } from '../api/types'
 
@@ -31,21 +32,37 @@ onMounted(async () => {
   error.value = ''
   
   try {
+    // Cargar productos
     const response = await ProductAPI.list(auth.token, 1, 100)
     dashboardProducts.value = response.data
   } catch (err: any) {
     console.error('Error cargando productos para Dashboard:', err)
-    error.value = 'Error al cargar productos'
+    error.value = getErrorMessage(err)
   } finally {
     loading.value = false
   }
   
-  if (!periodStore.activePeriod) {
-    await periodStore.fetchActive()
-  }
+  // Cargar período activo
+  try {
+    if (!periodStore.activePeriod) {
+      await periodStore.fetchActive()
+    }
 
-  if (periodStore.activePeriod) {
-    await recordsStore.fetchByPeriod(periodStore.activePeriod.id)
+    // Solo intentar cargar registros si hay un período activo
+    if (periodStore.activePeriod) {
+      await recordsStore.fetchByPeriod(periodStore.activePeriod.id)
+    }
+  } catch (err: any) {
+    console.error('Error cargando período:', err)
+    // Mostrar error traducido
+    const translatedError = getErrorMessage(err)
+    error.value = translatedError
+    
+    // Si no hay período activo, no es un error crítico, solo mostramos el mensaje
+    if (!err.message?.toLowerCase().includes('no active period')) {
+      // Para otros errores, podrías querer hacer algo adicional
+      console.error('Error inesperado:', translatedError)
+    }
   }
 })
 
