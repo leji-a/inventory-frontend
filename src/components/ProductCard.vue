@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import type { ProductImage } from '../api/types'
+import { ref, onMounted } from 'vue'
+import type { InventoryPeriod, ProductImage } from '../api/types'
+import { PeriodAPI } from '../api';
+import { useAuthStore } from '../stores/auth';
 
 const props = defineProps<{
   product: {
@@ -62,6 +64,14 @@ function save() {
 
   editing.value = false
 }
+
+const activePeriod = ref<InventoryPeriod | null>(null)
+const auth = useAuthStore()
+const token = auth.token
+
+onMounted(async () => {
+  activePeriod.value = await PeriodAPI.active(token!)
+})
 </script>
 
 <template>
@@ -92,7 +102,7 @@ function save() {
       </div>
 
       <div class="actions">
-        <button class="btn" @click="editing = true">
+        <button class="btn" @click="editing = true" :disabled="product.quantity === null && !activePeriod">
           {{ product.quantity === null ? "Agregar" : "Editar" }}
         </button>
 
@@ -311,5 +321,9 @@ function save() {
     font-size: 1.3rem;
     padding: 0.3rem 0.5rem;
   }
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>
