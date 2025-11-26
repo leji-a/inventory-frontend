@@ -8,6 +8,7 @@ const email = ref('')
 const password = ref('')
 const auth = useAuthStore()
 const router = useRouter()
+const showPassword = ref(false)
 
 const error = ref('')
 const loading = ref(false)
@@ -39,14 +40,73 @@ async function handleLogin() {
       <h1 class="auth-title">Bienvenido</h1>
 
       <form @submit.prevent="handleLogin" class="auth-form">
-
+        
+        <!-- Email -->
         <div class="field">
-          <input v-model="email" type="email" placeholder="Email" class="auth-input" />
+          <input 
+            v-model="email" 
+            type="email" 
+            placeholder="Email" 
+            class="auth-input" 
+          />
           <ErrorMessage :message="errors.email" />
         </div>
 
-        <div class="field">
-          <input v-model="password" type="password" placeholder="Contraseña" class="auth-input" />
+        <!-- Password -->
+        <div class="field password-field">
+          <div class="password-wrapper">
+            <input
+              v-model="password"
+              :type="showPassword ? 'text' : 'password'"
+              placeholder="Contraseña"
+              class="auth-input"
+            />
+
+            <button 
+              type="button" 
+              class="toggle-btn" 
+              @click="showPassword = !showPassword" 
+              aria-label="Toggle password visibility"
+            >
+              <!-- ojo cerrado -->
+              <svg 
+                v-if="!showPassword"
+                xmlns="http://www.w3.org/2000/svg" 
+                width="20" 
+                height="20"
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                stroke-width="2"
+                stroke-linecap="round" 
+                stroke-linejoin="round"
+              >
+                <path d="M1 12S5 5 12 5s11 7 11 7-4 7-11 7S1 12 1 12z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+                <line x1="4" y1="4" x2="20" y2="20"></line>
+              </svg>
+
+              <!-- ojo abierto -->
+              <svg 
+                v-else 
+                xmlns="http://www.w3.org/2000/svg" 
+                width="20" 
+                height="20"
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                stroke-width="2"
+                stroke-linecap="round" 
+                stroke-linejoin="round"
+                aria-hidden="true" 
+                focusable="false"
+              >
+                <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </button>
+          </div>
+
           <ErrorMessage :message="errors.password" />
         </div>
 
@@ -63,6 +123,7 @@ async function handleLogin() {
     </div>
   </div>
 </template>
+
 
 <style scoped>
 .auth-wrapper {
@@ -138,5 +199,31 @@ async function handleLogin() {
   text-align: center;
   display: block;
   font-size: 0.9rem;
+}
+
+.password-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.toggle-btn {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  padding: 0;
+  color: #aaa;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.toggle-btn:hover {
+  color: #fff;
+}
+
+.toggle-btn svg {
+  display: block;
 }
 </style>
