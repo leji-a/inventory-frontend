@@ -122,12 +122,14 @@ function logout() {
 
     <div v-if="!periodStore.activePeriod" class="active-period-card">
       <h2>No hay un periodo activo</h2> <br>  
-      <button class="btn-primary" @click="$router.push('/periods')">
-          Ir a Periodos
-      </button>
-      <button class="btn-primary" @click="$router.push('/products')">
-        Ir a Productos
-      </button>
+      <div class="period-buttons">
+				<button class="btn-primary" @click="$router.push('/periods')">
+     	     Ir a Periodos
+     	  </button>
+     	  <button class="btn-primary" @click="$router.push('/products')">
+     	    Ir a Productos
+     	  </button>
+			</div>
     </div>
 
     <div class="filter-box">
