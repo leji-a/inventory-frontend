@@ -1,7 +1,7 @@
 // src/stores/periods.ts
 import { defineStore } from 'pinia'
 import { PeriodAPI } from '../api/endpoints/periods'
-import type { InventoryPeriod, CreatePeriodInput } from '../api/types'
+import type { InventoryPeriod, CreatePeriodInput, UpdatePeriodInput } from '../api/types'
 import { useAuthStore } from './auth'
 
 interface PeriodsState {
@@ -64,6 +64,61 @@ export const usePeriodsStore = defineStore('periods', {
       const p = await PeriodAPI.create(auth.token, data)
       this.allPeriods.push(p)
       if (p) this.activePeriod = p
+    },
+
+    async update(id: number, data: UpdatePeriodInput) {
+      const auth = useAuthStore()
+      if (!auth.token) throw new Error('Not authenticated')
+      
+      this.loading = true
+      this.error = null
+      
+      try {
+        const updated = await PeriodAPI.update(auth.token, id, data)
+        
+        // Actualizar en la lista
+        const index = this.allPeriods.findIndex(p => p.id === id)
+        if (index !== -1) {
+          this.allPeriods[index] = updated
+        }
+        
+        // Actualizar período activo si es el mismo
+        if (this.activePeriod?.id === id) {
+          this.activePeriod = updated
+        }
+        
+        return updated
+      } catch (err: any) {
+        this.error = err.message ?? String(err)
+        throw err
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async delete(id: number) {
+      const auth = useAuthStore()
+      if (!auth.token) throw new Error('Not authenticated')
+      
+      this.loading = true
+      this.error = null
+      
+      try {
+        await PeriodAPI.delete(auth.token, id)
+        
+        // Remover de la lista
+        this.allPeriods = this.allPeriods.filter(p => p.id !== id)
+        
+        // Si era el período activo, limpiarlo
+        if (this.activePeriod?.id === id) {
+          this.activePeriod = null
+        }
+      } catch (err: any) {
+        this.error = err.message ?? String(err)
+        throw err
+      } finally {
+        this.loading = false
+      }
     },
 
     async close(id: number) {

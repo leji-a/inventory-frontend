@@ -32,7 +32,7 @@ export async function apiFetch<T>(
   }
 
   if (!res.ok) {
-    throw new Error(`API Error (${res.status}): ${JSON.stringify(data)}`)
+    throw new Error(data.message || data.error || `API Error (${res.status})`)
   }
 
   return data as T

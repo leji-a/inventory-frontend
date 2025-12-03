@@ -51,6 +51,13 @@ const newPeriod = ref({
   notes: ""
 })
 
+// Editar período
+const editingPeriod = ref<any>(null)
+const editData = ref({
+  name: "",
+  notes: ""
+})
+
 async function createPeriod() {
   if (!newPeriod.value.name.trim()) {
     error.value = "El nombre es obligatorio"
@@ -76,6 +83,56 @@ async function createPeriod() {
     error.value = getErrorMessage(err)
   } finally {
     loading.value = false
+  }
+}
+
+function startEditing(period: any) {
+  editingPeriod.value = period
+  editData.value = {
+    name: period.name,
+    notes: period.notes || ""
+  }
+  showCreateForm.value = false
+}
+
+function cancelEditing() {
+  editingPeriod.value = null
+  editData.value = {
+    name: "",
+    notes: ""
+  }
+}
+
+async function saveEdit() {
+  if (!editingPeriod.value || !editData.value.name.trim()) {
+    error.value = "El nombre es obligatorio"
+    return
+  }
+
+  error.value = ""
+
+  try {
+    await periodStore.update(editingPeriod.value.id, {
+      name: editData.value.name.trim(),
+      notes: editData.value.notes.trim()
+    })
+
+    cancelEditing()
+  } catch (err: any) {
+    error.value = getErrorMessage(err)
+  }
+}
+
+async function deletePeriod(id: number, name: string) {
+  if (!confirm(`¿Eliminar el período "${name}"? Esta acción no se puede deshacer.`)) return
+  
+  error.value = ""
+  
+  try {
+    await periodStore.delete(id)
+    await periodStore.fetchActive()
+  } catch (err: any) {
+    error.value = getErrorMessage(err)
   }
 }
 
@@ -126,7 +183,7 @@ onMounted(async () => {
       <button 
         class="btn-primary" 
         @click="showCreateForm = !showCreateForm"
-        :disabled="loading"
+        :disabled="periodStore.loading"
       >
         {{ showCreateForm ? "Cancelar" : "+ Nuevo Período" }}
       </button>
@@ -144,7 +201,7 @@ onMounted(async () => {
           <input 
             v-model="newPeriod.name" 
             class="input" 
-            :disabled="loading"
+            :disabled="periodStore.loading"
           />
         </div>
 
@@ -154,7 +211,7 @@ onMounted(async () => {
             v-model="newPeriod.start_date" 
             type="date" 
             class="input" 
-            :disabled="loading"
+            :disabled="periodStore.loading"
           />
         </div>
 
@@ -164,7 +221,7 @@ onMounted(async () => {
             v-model="newPeriod.notes" 
             rows="3" 
             class="textarea"
-            :disabled="loading"
+            :disabled="periodStore.loading"
           ></textarea>
         </div>
 
@@ -172,16 +229,16 @@ onMounted(async () => {
           <button 
             class="btn-primary" 
             @click="createPeriod"
-            :disabled="loading || !newPeriod.name.trim()"
+            :disabled="periodStore.loading || !newPeriod.name.trim()"
           >
-            {{ loading ? "Creando..." : "Crear" }}
+            {{ periodStore.loading ? "Creando..." : "Crear" }}
           </button>
         </div>
       </div>
     </div>
 
     <div class="periods-list">
-      <div v-if="loading && periodStore.allPeriods.length === 0" class="loading-state">
+      <div v-if="periodStore.loading && periodStore.allPeriods.length === 0" class="loading-state">
         Cargando períodos...
       </div>
 
@@ -196,39 +253,84 @@ onMounted(async () => {
           class="period-card"
           :class="{ active: p.id === periodStore.activePeriod?.id }"
         >
-          <div class="period-info">
-            <h3>
-              {{ p.name }}
-              <span v-if="p.id === periodStore.activePeriod?.id" class="badge">Activo</span>
-            </h3>
-
-            <p><strong>Inicio:</strong> {{ formatDate(p.start_date) }}</p>
-            <p><strong>Notas:</strong> {{ p.notes || "N/A" }}</p>
+          <!-- Modo edición -->
+          <div v-if="editingPeriod?.id === p.id" class="edit-form">
+            <div class="field">
+              <label>Nombre</label>
+              <input v-model="editData.name" type="text" class="input" />
+            </div>
+            <div class="field">
+              <label>Notas</label>
+              <textarea v-model="editData.notes" rows="2" class="textarea"></textarea>
+            </div>
+            <div class="edit-form-buttons">
+              <button 
+                class="btn-primary" 
+                @click="saveEdit"
+                :disabled="periodStore.loading || !editData.name.trim()"
+              >
+                Guardar
+              </button>
+              <button class="btn-secondary" @click="cancelEditing" :disabled="periodStore.loading">
+                Cancelar
+              </button>
+            </div>
           </div>
 
-          <div class="period-actions">
-            <button
-              class="btn-danger"
-              @click="closePeriod(p.id)"
-              v-if="p.id === periodStore.activePeriod?.id"
-              :disabled="loading"
-            >
-              Cerrar período
-            </button>
-            <button 
-              class="btn-primary" 
-              @click="$router.push(`/periods/${p.id}`)"
-              :disabled="loading"
-            >
-              Ver detalles
-            </button>
+          <!-- Vista normal -->
+          <div v-else>
+            <div class="period-info">
+              <h3>
+                {{ p.name }}
+                <span v-if="p.id === periodStore.activePeriod?.id" class="badge">Activo</span>
+              </h3>
+
+              <p><strong>Inicio:</strong> {{ formatDate(p.start_date) }}</p>
+              <p><strong>Notas:</strong> {{ p.notes || "N/A" }}</p>
+            </div>
+
+            <div class="period-actions">
+              <button
+                class="btn-secondary"
+                @click="startEditing(p)"
+                :disabled="periodStore.loading"
+              >
+                Editar
+              </button>
+
+              <button
+                class="btn-danger"
+                @click="deletePeriod(p.id, p.name)"
+                :disabled="periodStore.loading || p.id === periodStore.activePeriod?.id"
+                :title="p.id === periodStore.activePeriod?.id ? 'No se puede eliminar el período activo' : ''"
+              >
+                Eliminar
+              </button>
+
+              <button
+                class="btn-danger"
+                @click="closePeriod(p.id)"
+                v-if="p.id === periodStore.activePeriod?.id"
+                :disabled="periodStore.loading"
+              >
+                Cerrar período
+              </button>
+
+              <button 
+                class="btn-primary" 
+                @click="$router.push(`/periods/${p.id}`)"
+                :disabled="periodStore.loading"
+              >
+                Ver detalles
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
     <Pagination
-      v-if="!loading && paginatedPeriods.length > 0"
+      v-if="!periodStore.loading && paginatedPeriods.length > 0"
       :currentPage="currentPage"
       :totalPages="totalPages"
       @change="changePage"
@@ -308,6 +410,19 @@ onMounted(async () => {
   border-color: var(--accent);
 }
 
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.edit-form-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
 .badge {
   background: var(--accent);
   color: white;
@@ -321,6 +436,7 @@ onMounted(async () => {
   margin-top: 1rem;
   display: flex;
   gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .btn-primary {

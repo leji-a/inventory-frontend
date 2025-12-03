@@ -132,3 +132,14 @@ export interface PaginatedCategories {
   data: Category[]
   pagination: Pagination
 }
+
+export interface CreatePeriodInput {
+  name: string
+  start_date: string
+  notes?: string
+}
+
+export interface UpdatePeriodInput {
+  name?: string
+  notes?: string
+}
